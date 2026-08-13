@@ -1,0 +1,27 @@
+{
+  "type": "record",
+  "name": "PaymentEnvelope",
+  "namespace": "Fixtures",
+  "fields": [
+    {
+      "name": "payment",
+      "type": [
+        {
+          "type": "record",
+          "name": "CardPayment",
+          "fields": [
+            { "name": "last4", "type": "string" }
+          ]
+        },
+        {
+          "type": "record",
+          "name": "WirePayment",
+          "fields": [
+            { "name": "iban", "type": "string" }
+          ]
+        }
+      ]
+    }
+  ]
+}
+

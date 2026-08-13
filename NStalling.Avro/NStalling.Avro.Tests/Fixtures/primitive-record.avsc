@@ -1,0 +1,10 @@
+{
+  "type": "record",
+  "name": "PrimitiveRecord",
+  "namespace": "Fixtures",
+  "fields": [
+    { "name": "id", "type": "string" },
+    { "name": "count", "type": "int" }
+  ]
+}
+

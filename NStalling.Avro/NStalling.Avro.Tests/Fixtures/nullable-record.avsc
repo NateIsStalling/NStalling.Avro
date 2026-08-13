@@ -1,0 +1,10 @@
+{
+  "type": "record",
+  "name": "NullableRecord",
+  "namespace": "Fixtures",
+  "fields": [
+    { "name": "id", "type": "string" },
+    { "name": "nickname", "type": ["null", "string"], "default": null }
+  ]
+}
+

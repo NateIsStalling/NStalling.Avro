@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NStalling.Avro", "NStalling.Avro\NStalling.Avro.csproj", "{D9BAFA8B-5863-4118-8AE5-4BEA649552E5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NStalling.Avro.Tests", "NStalling.Avro.Tests\NStalling.Avro.Tests.csproj", "{F1855055-BB0D-4FC3-8EFB-74C223CD9D61}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D9BAFA8B-5863-4118-8AE5-4BEA649552E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D9BAFA8B-5863-4118-8AE5-4BEA649552E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D9BAFA8B-5863-4118-8AE5-4BEA649552E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D9BAFA8B-5863-4118-8AE5-4BEA649552E5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F1855055-BB0D-4FC3-8EFB-74C223CD9D61}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F1855055-BB0D-4FC3-8EFB-74C223CD9D61}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F1855055-BB0D-4FC3-8EFB-74C223CD9D61}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F1855055-BB0D-4FC3-8EFB-74C223CD9D61}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "NullableUnion",
+  "namespace": "Fixtures",
+  "fields": [
+    {
+      "name": "value",
+      "type": ["null", "string", "int"],
+      "default": null
+    }
+  ]
+}
+

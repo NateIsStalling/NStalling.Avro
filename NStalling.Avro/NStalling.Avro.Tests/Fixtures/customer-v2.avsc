@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "Customer",
+  "namespace": "Acme.Events",
+  "fields": [
+    { "name": "id", "type": "string" },
+    { "name": "name", "type": "string" },
+    { "name": "email", "type": ["null", "string"], "default": null }
+  ]
+}
+

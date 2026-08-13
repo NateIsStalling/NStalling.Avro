@@ -1,0 +1,10 @@
+{
+  "type": "record",
+  "name": "Node",
+  "namespace": "Fixtures",
+  "fields": [
+    { "name": "name", "type": "string" },
+    { "name": "parent", "type": ["null", "Node"], "default": null }
+  ]
+}
+

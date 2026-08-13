@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "CustomerCreated",
+  "namespace": "Acme.Events",
+  "aliases": ["Customer"],
+  "fields": [
+    { "name": "id", "type": "string" },
+    { "name": "name", "type": "string" },
+    { "name": "tier", "type": ["null", "string"], "default": null }
+  ]
+}
+

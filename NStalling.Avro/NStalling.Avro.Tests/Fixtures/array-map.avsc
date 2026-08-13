@@ -1,0 +1,10 @@
+{
+  "type": "record",
+  "name": "ArrayMap",
+  "namespace": "Fixtures",
+  "fields": [
+    { "name": "ids", "type": { "type": "array", "items": "string" } },
+    { "name": "attributes", "type": { "type": "map", "values": "string" } }
+  ]
+}
+

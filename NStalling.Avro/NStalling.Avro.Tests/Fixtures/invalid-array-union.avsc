@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "InvalidArrayUnion",
+  "namespace": "Fixtures",
+  "fields": [
+    {
+      "name": "value",
+      "type": [
+        { "type": "array", "items": "string" },
+        { "type": "array", "items": "int" }
+      ]
+    }
+  ]
+}
+

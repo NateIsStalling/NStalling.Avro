@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "Order",
+  "namespace": "Fixtures",
+  "fields": [
+    {
+      "name": "buyer",
+      "type": {
+        "type": "record",
+        "name": "Customer",
+        "fields": [
+          { "name": "id", "type": "string" }
+        ]
+      }
+    }
+  ]
+}
+

@@ -1,0 +1,19 @@
+{
+  "type": "record",
+  "name": "OrderParties",
+  "namespace": "Fixtures",
+  "fields": [
+    {
+      "name": "buyer",
+      "type": {
+        "type": "record",
+        "name": "Customer",
+        "fields": [
+          { "name": "id", "type": "string" }
+        ]
+      }
+    },
+    { "name": "seller", "type": "Customer" }
+  ]
+}
+
