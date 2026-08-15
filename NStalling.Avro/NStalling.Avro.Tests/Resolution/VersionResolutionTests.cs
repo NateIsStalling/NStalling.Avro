@@ -1,6 +1,5 @@
 using Avro;
-using NStalling.Avro.Configuration;
-using NStalling.Avro.Resolution;
+using NStalling.Avro;
 using NStalling.Avro.Tests.Fixtures;
 using Xunit;
 

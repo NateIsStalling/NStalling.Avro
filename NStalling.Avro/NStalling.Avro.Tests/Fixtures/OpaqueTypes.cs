@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 using Avro;
-using NStalling.Avro.Polymorphism;
+using NStalling.Avro;
 
 namespace NStalling.Avro.Tests.Fixtures
 {

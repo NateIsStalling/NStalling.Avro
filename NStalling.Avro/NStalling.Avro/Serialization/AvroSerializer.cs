@@ -5,8 +5,7 @@ using System.Reflection;
 using Avro;
 using Avro.IO;
 using Avro.Reflect;
-using NStalling.Avro.Reflection;
-using NStalling.Avro.Resolution;
+using NStalling.Avro.Provider;
 
 namespace NStalling.Avro.Serialization
 {
@@ -20,8 +19,8 @@ namespace NStalling.Avro.Serialization
     {
         private readonly IAvroTypeResolver _resolver;
         private readonly ApacheReflectionAdapter _adapter;
-        private readonly Polymorphism.IPolymorphicBindingProvider? _bindingProvider;
-        private readonly Polymorphism.ValueDirectedPayloadBinder? _binder;
+        private readonly IPolymorphicBindingProvider? _bindingProvider;
+        private readonly ValueDirectedPayloadBinder? _binder;
         private static readonly ConcurrentDictionary<Type, (ConstructorInfo Ctor, MethodInfo Read)> ReaderApi = new();
 
         public AvroSerializer(IAvroTypeResolver resolver)
@@ -29,12 +28,12 @@ namespace NStalling.Avro.Serialization
         {
         }
 
-        internal AvroSerializer(IAvroTypeResolver resolver, Polymorphism.IPolymorphicBindingProvider? bindingProvider)
+        internal AvroSerializer(IAvroTypeResolver resolver, IPolymorphicBindingProvider? bindingProvider)
         {
             _resolver = resolver ?? throw new ArgumentNullException(nameof(resolver));
             _adapter = new ApacheReflectionAdapter(resolver);
             _bindingProvider = bindingProvider;
-            _binder = bindingProvider is null ? null : new Polymorphism.ValueDirectedPayloadBinder(resolver, this);
+            _binder = bindingProvider is null ? null : new ValueDirectedPayloadBinder(resolver, this);
         }
 
         internal IAvroTypeResolver Resolver => _resolver;

@@ -1,8 +1,6 @@
 using System.Collections.Generic;
 using Avro;
-using NStalling.Avro.Configuration;
-using NStalling.Avro.Polymorphism;
-using NStalling.Avro.Resolution;
+using NStalling.Avro;
 using NStalling.Avro.Serialization;
 using NStalling.Avro.Tests.Fixtures;
 using Xunit;

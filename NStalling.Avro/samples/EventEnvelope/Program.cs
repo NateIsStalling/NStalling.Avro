@@ -2,7 +2,7 @@ using System.Runtime.Serialization;
 using Avro;
 using Avro.IO;
 using Avro.Reflect;
-using NStalling.Avro.Configuration;
+using NStalling.Avro;
 
 namespace EventEnvelope;
 

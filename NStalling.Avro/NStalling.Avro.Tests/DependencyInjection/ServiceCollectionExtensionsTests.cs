@@ -1,8 +1,7 @@
 using Avro;
 using Microsoft.Extensions.DependencyInjection;
-using NStalling.Avro.Configuration;
+using NStalling.Avro;
 using NStalling.Avro.DependencyInjection;
-using NStalling.Avro.Resolution;
 using NStalling.Avro.Serialization;
 using NStalling.Avro.Tests.Fixtures;
 using Xunit;

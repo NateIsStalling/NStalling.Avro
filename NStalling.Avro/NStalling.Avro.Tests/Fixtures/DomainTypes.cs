@@ -1,6 +1,5 @@
 using System.Runtime.Serialization;
-using NStalling.Avro.Polymorphism;
-using NStalling.Avro.Resolution;
+using NStalling.Avro;
 
 namespace NStalling.Avro.Tests.Fixtures
 {

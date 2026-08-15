@@ -1,10 +1,7 @@
-using System;
-using System.IO;
 using Avro;
 using Avro.IO;
 using Avro.Reflect;
-using NStalling.Avro.Reflection;
-using NStalling.Avro.Resolution;
+using NStalling.Avro.Provider;
 
 namespace NStalling.Avro.Tests.Fixtures
 {
