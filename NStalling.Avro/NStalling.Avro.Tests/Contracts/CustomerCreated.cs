@@ -2,7 +2,6 @@ using System.Runtime.Serialization;
 
 namespace NStalling.Avro.Tests.Contracts;
 
-
 [DataContract(Name = "CustomerCreated", Namespace = "Acme.Events")]
 public sealed class CustomerCreated
 {

@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -39,15 +37,11 @@ public sealed class AvroTypeUnionBuilder<T>
     private static PropertyInfo GetMember<TMember>(Expression<Func<T, TMember>> expression)
     {
         if (expression.Body is MemberExpression member && member.Member is PropertyInfo propertyInfo)
-        {
             return propertyInfo;
-        }
 
         if (expression.Body is UnaryExpression { Operand: MemberExpression boxedMember }
             && boxedMember.Member is PropertyInfo boxedProperty)
-        {
             return boxedProperty;
-        }
 
         throw new ArgumentException("Member expression must reference a property.", nameof(expression));
     }
@@ -55,8 +49,8 @@ public sealed class AvroTypeUnionBuilder<T>
 
 public sealed class AvroMemberUnionBuilder<TDeclaring, TMember>
 {
-    private readonly AvroUnionConfigurationBuilder _owner;
     private readonly string _memberName;
+    private readonly AvroUnionConfigurationBuilder _owner;
 
     internal AvroMemberUnionBuilder(AvroUnionConfigurationBuilder owner, string memberName)
     {
@@ -76,4 +70,3 @@ public sealed class AvroMemberUnionBuilder<TDeclaring, TMember>
         return new AvroTypeUnionBuilder<TDeclaring>(_owner);
     }
 }
-

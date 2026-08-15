@@ -1,5 +1,3 @@
-using System;
-
 namespace NStalling.Avro;
 
 public sealed class AvroTypeResolutionException : InvalidOperationException
@@ -8,4 +6,3 @@ public sealed class AvroTypeResolutionException : InvalidOperationException
     {
     }
 }
-

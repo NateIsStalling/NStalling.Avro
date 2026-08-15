@@ -6,6 +6,8 @@ public static class AvroSchema
 {
     private static readonly IAvroSchemaResolver DefaultResolver = new DefaultAvroSchemaResolver();
 
-    public static Schema For<T>() => DefaultResolver.Resolve<T>();
+    public static Schema For<T>()
+    {
+        return DefaultResolver.Resolve<T>();
+    }
 }
-

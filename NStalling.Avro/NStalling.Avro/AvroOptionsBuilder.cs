@@ -1,5 +1,3 @@
-using System;
-
 namespace NStalling.Avro;
 
 public sealed class AvroOptionsBuilder
@@ -26,8 +24,13 @@ public sealed class AvroOptionsBuilder
         return this;
     }
 
-    internal AvroTypeRegistry BuildRegistry() => _typeRegistryBuilder.Build();
+    internal AvroTypeRegistry BuildRegistry()
+    {
+        return _typeRegistryBuilder.Build();
+    }
 
-    internal AvroUnionConfiguration BuildUnionConfiguration() => _unionBuilder.Build();
+    internal AvroUnionConfiguration BuildUnionConfiguration()
+    {
+        return _unionBuilder.Build();
+    }
 }
-

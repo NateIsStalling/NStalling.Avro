@@ -1,11 +1,11 @@
-using System;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace NStalling.Avro;
 
 public static class AvroServiceCollectionExtensions
 {
-    public static IServiceCollection AddAvro(this IServiceCollection services, Action<AvroOptionsBuilder>? configure = null)
+    public static IServiceCollection AddAvro(this IServiceCollection services,
+        Action<AvroOptionsBuilder>? configure = null)
     {
         if (services is null) throw new ArgumentNullException(nameof(services));
 
@@ -23,4 +23,3 @@ public static class AvroServiceCollectionExtensions
         return services;
     }
 }
-

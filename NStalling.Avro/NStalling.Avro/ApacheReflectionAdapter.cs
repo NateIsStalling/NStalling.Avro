@@ -1,19 +1,17 @@
-using System;
+using System.Diagnostics;
 using Avro;
 using Avro.Reflect;
 
 namespace NStalling.Avro;
 
 /// <summary>
-/// Integrates NStalling.Avro type resolution with Apache.Avro's reflection infrastructure.
-/// 
-/// Responsible for populating Apache's ClassCache and other reflection-related data structures
-/// based on resolved NamedSchema → CLR Type mappings.
+///     Integrates NStalling.Avro type resolution with Apache.Avro's reflection infrastructure.
+///     Responsible for populating Apache's ClassCache and other reflection-related data structures
+///     based on resolved NamedSchema → CLR Type mappings.
 /// </summary>
 public sealed class ApacheReflectionAdapter
 {
     private readonly IAvroTypeResolver _typeResolver;
-    private readonly ClassCache _classCache;
 
     public ApacheReflectionAdapter(IAvroTypeResolver typeResolver)
         : this(typeResolver, new ClassCache())
@@ -23,20 +21,19 @@ public sealed class ApacheReflectionAdapter
     public ApacheReflectionAdapter(IAvroTypeResolver typeResolver, ClassCache classCache)
     {
         _typeResolver = typeResolver ?? throw new ArgumentNullException(nameof(typeResolver));
-        _classCache = classCache ?? throw new ArgumentNullException(nameof(classCache));
+        ClassCache = classCache ?? throw new ArgumentNullException(nameof(classCache));
     }
 
     /// <summary>
-    /// Gets the underlying ClassCache for use with Apache reflection readers/writers.
+    ///     Gets the underlying ClassCache for use with Apache reflection readers/writers.
     /// </summary>
-    public ClassCache ClassCache => _classCache;
+    public ClassCache ClassCache { get; }
 
     /// <summary>
-    /// Prepares Apache reflection infrastructure for the given schema by resolving
-    /// and registering all named schemas reachable from it.
-    /// 
-    /// This ensures that Apache's reflection machinery can find the appropriate CLR types
-    /// for all named schemas in the graph before deserialization begins.
+    ///     Prepares Apache reflection infrastructure for the given schema by resolving
+    ///     and registering all named schemas reachable from it.
+    ///     This ensures that Apache's reflection machinery can find the appropriate CLR types
+    ///     for all named schemas in the graph before deserialization begins.
     /// </summary>
     public void PrepareSchema(Schema schema, Type? declaredType = null, string? schemaVersion = null)
     {
@@ -46,11 +43,8 @@ public sealed class ApacheReflectionAdapter
         // try resolver-based root lookup.
         if (schema is NamedSchema rootNamedSchema)
         {
-            var rootType = declaredType ?? _typeResolver.ResolveOrDefault(rootNamedSchema, declaredType: null, schemaVersion: schemaVersion);
-            if (rootType is not null)
-            {
-                RegisterWithClassCache(rootNamedSchema, rootType);
-            }
+            var rootType = declaredType ?? _typeResolver.ResolveOrDefault(rootNamedSchema, null, schemaVersion);
+            if (rootType is not null) RegisterWithClassCache(rootNamedSchema, rootType);
         }
 
         // Traverse and resolve all nested named schemas
@@ -60,33 +54,27 @@ public sealed class ApacheReflectionAdapter
             if (schema is NamedSchema rootNamed && namedSchema.Fullname == rootNamed.Fullname)
                 continue;
 
-            var resolvedType = _typeResolver.ResolveOrDefault(namedSchema, declaredType: null, schemaVersion: schemaVersion);
-            if (resolvedType is not null)
-            {
-                RegisterWithClassCache(namedSchema, resolvedType);
-            }
+            var resolvedType = _typeResolver.ResolveOrDefault(namedSchema, null, schemaVersion);
+            if (resolvedType is not null) RegisterWithClassCache(namedSchema, resolvedType);
         }
     }
 
     /// <summary>
-    /// Registers a resolved NamedSchema → CLR Type mapping with Apache's ClassCache.
-    /// 
-    /// This allows Apache's reflection reader/writer to materialize the concrete CLR type
-    /// when deserializing/serializing the named schema.
+    ///     Registers a resolved NamedSchema → CLR Type mapping with Apache's ClassCache.
+    ///     This allows Apache's reflection reader/writer to materialize the concrete CLR type
+    ///     when deserializing/serializing the named schema.
     /// </summary>
     private void RegisterWithClassCache(NamedSchema namedSchema, Type clrType)
     {
         try
         {
-            _classCache.LoadClassCache(clrType, namedSchema);
+            ClassCache.LoadClassCache(clrType, namedSchema);
         }
         catch (Exception ex)
         {
             // ClassCache integration is best-effort; if it fails, continue
             // Apache will attempt to find the type through its normal mechanisms
-            System.Diagnostics.Debug.WriteLine($"ClassCache registration failed for {namedSchema.Fullname}: {ex.Message}");
+            Debug.WriteLine($"ClassCache registration failed for {namedSchema.Fullname}: {ex.Message}");
         }
     }
 }
-
-

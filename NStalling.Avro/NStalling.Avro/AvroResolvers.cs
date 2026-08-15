@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace NStalling.Avro;
+﻿namespace NStalling.Avro;
 
 public static class AvroResolvers
 {
@@ -13,10 +11,7 @@ public static class AvroResolvers
 
     public static IAvroSchemaResolver CreateSchemaResolver(Action<AvroUnionConfigurationBuilder>? configure = null)
     {
-        if (configure is null)
-        {
-            return new DefaultAvroSchemaResolver();
-        }
+        if (configure is null) return new DefaultAvroSchemaResolver();
 
         var builder = new AvroUnionConfigurationBuilder();
         configure(builder);

@@ -1,4 +1,3 @@
-using System;
 using System.Diagnostics.CodeAnalysis;
 using Avro;
 
@@ -24,4 +23,3 @@ public static class AvroSchemaResolverExtensions
         return resolver.ResolveOrDefault(typeof(T));
     }
 }
-

@@ -1,9 +1,5 @@
-using System;
-using System.Collections;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text.Json;
@@ -53,15 +49,15 @@ public sealed class DefaultAvroSchemaResolver : IAvroSchemaResolver
     private static Schema GenerateSchema(Type type, AvroUnionConfiguration unionConfiguration)
     {
         var generator = new AvroSchemaJsonGenerator(unionConfiguration);
-        var schemaModel = generator.BuildFor(type, memberInfo: null, isRoot: true);
+        var schemaModel = generator.BuildFor(type, null, true);
         var avsc = JsonSerializer.Serialize(schemaModel);
         return Schema.Parse(avsc);
     }
 
     private sealed class AvroSchemaJsonGenerator
     {
-        private readonly Dictionary<Type, AvroSchemaName> _namedSchemaNames = new();
         private readonly HashSet<Type> _constructing = new();
+        private readonly Dictionary<Type, AvroSchemaName> _namedSchemaNames = new();
         private readonly AvroUnionConfiguration _unionConfiguration;
 
         public AvroSchemaJsonGenerator(AvroUnionConfiguration unionConfiguration)
@@ -75,43 +71,30 @@ public sealed class DefaultAvroSchemaResolver : IAvroSchemaResolver
             var allowNull = ShouldBeNullable(type, memberInfo);
             var baseSchema = BuildCore(normalizedType, isRoot);
 
-            if (!allowNull)
-            {
-                return baseSchema;
-            }
+            if (!allowNull) return baseSchema;
 
             return new List<object> { "null", baseSchema };
         }
 
         private object BuildCore(Type type, bool isRoot)
         {
-            if (TryMapPrimitive(type, out var primitiveSchema))
-            {
-                return primitiveSchema;
-            }
+            if (TryMapPrimitive(type, out var primitiveSchema)) return primitiveSchema;
 
-            if (type.IsEnum)
-            {
-                return BuildEnumSchema(type);
-            }
+            if (type.IsEnum) return BuildEnumSchema(type);
 
             if (TryMapDictionary(type, out var dictionaryValueType))
-            {
                 return new Dictionary<string, object?>
                 {
                     ["type"] = "map",
-                    ["values"] = BuildFor(dictionaryValueType, memberInfo: null, isRoot: false)
+                    ["values"] = BuildFor(dictionaryValueType, null, false)
                 };
-            }
 
             if (TryMapArray(type, out var itemType))
-            {
                 return new Dictionary<string, object?>
                 {
                     ["type"] = "array",
-                    ["items"] = BuildFor(itemType, memberInfo: null, isRoot: false)
+                    ["items"] = BuildFor(itemType, null, false)
                 };
-            }
 
             return BuildRecordSchema(type, isRoot);
         }
@@ -120,20 +103,11 @@ public sealed class DefaultAvroSchemaResolver : IAvroSchemaResolver
         {
             var schemaName = GetSchemaName(type);
 
-            if (_namedSchemaNames.ContainsKey(type) && !isRoot)
-            {
-                return schemaName.FullName;
-            }
+            if (_namedSchemaNames.ContainsKey(type) && !isRoot) return schemaName.FullName;
 
-            if (!_namedSchemaNames.ContainsKey(type))
-            {
-                _namedSchemaNames[type] = schemaName;
-            }
+            if (!_namedSchemaNames.ContainsKey(type)) _namedSchemaNames[type] = schemaName;
 
-            if (_constructing.Contains(type))
-            {
-                return schemaName.FullName;
-            }
+            if (_constructing.Contains(type)) return schemaName.FullName;
 
             _constructing.Add(type);
 
@@ -143,10 +117,7 @@ public sealed class DefaultAvroSchemaResolver : IAvroSchemaResolver
                 ["name"] = schemaName.Name
             };
 
-            if (!string.IsNullOrWhiteSpace(schemaName.Namespace))
-            {
-                record["namespace"] = schemaName.Namespace;
-            }
+            if (!string.IsNullOrWhiteSpace(schemaName.Namespace)) record["namespace"] = schemaName.Namespace;
 
             var fields = new List<object>();
             foreach (var property in GetSerializableProperties(type))
@@ -170,31 +141,23 @@ public sealed class DefaultAvroSchemaResolver : IAvroSchemaResolver
         private object BuildForProperty(Type declaringType, PropertyInfo property)
         {
             if (_unionConfiguration.TryGetMemberUnion(declaringType, property.Name, out var memberUnion))
-            {
                 return BuildConfiguredUnion(memberUnion, property);
-            }
 
             var normalizedType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
             if (_unionConfiguration.TryGetTypeUnion(normalizedType, out var typeUnion))
-            {
                 return BuildConfiguredUnion(typeUnion, property);
-            }
 
-            return BuildFor(property.PropertyType, property, isRoot: false);
+            return BuildFor(property.PropertyType, property, false);
         }
 
         private object BuildConfiguredUnion(IReadOnlyList<Type> branches, PropertyInfo property)
         {
             if (branches.Count == 0)
-            {
-                throw new AvroTypeResolutionException($"Configured union for '{property.DeclaringType?.FullName}.{property.Name}' has no branches.");
-            }
+                throw new AvroTypeResolutionException(
+                    $"Configured union for '{property.DeclaringType?.FullName}.{property.Name}' has no branches.");
 
             var normalized = NormalizeConfiguredUnion(branches, property);
-            if (normalized.Count == 1)
-            {
-                return normalized[0];
-            }
+            if (normalized.Count == 1) return normalized[0];
 
             return normalized;
         }
@@ -205,15 +168,13 @@ public sealed class DefaultAvroSchemaResolver : IAvroSchemaResolver
 
             foreach (var branchType in branches)
             {
-                var branchSchema = BuildFor(branchType, memberInfo: null, isRoot: false);
+                var branchSchema = BuildFor(branchType, null, false);
                 FlattenUnion(branchSchema, output);
             }
 
             if (ShouldBeNullable(property.PropertyType, property)
                 && !output.Any(IsNullBranch))
-            {
                 output.Insert(0, "null");
-            }
 
             ValidateUnionBranches(output, property);
             return output;
@@ -226,41 +187,29 @@ public sealed class DefaultAvroSchemaResolver : IAvroSchemaResolver
             {
                 var key = GetBranchKey(branch);
                 if (!seen.Add(key))
-                {
                     throw new AvroTypeResolutionException(
                         $"Invalid union for '{property.DeclaringType?.FullName}.{property.Name}': duplicate Avro branch '{key}'.");
-                }
             }
         }
 
         private static string GetBranchKey(object branch)
         {
-            if (branch is string primitiveOrNamedReference)
-            {
-                return primitiveOrNamedReference;
-            }
+            if (branch is string primitiveOrNamedReference) return primitiveOrNamedReference;
 
             if (branch is Dictionary<string, object?> branchObject)
             {
                 if (!branchObject.TryGetValue("type", out var typeNode) || typeNode is not string typeName)
-                {
                     throw new AvroTypeResolutionException("Union branch object is missing required 'type'.");
-                }
 
-                if (typeName is "array" or "map")
-                {
-                    return typeName;
-                }
+                if (typeName is "array" or "map") return typeName;
 
-                if (typeName is "record" or "enum" or "fixed")
-                {
-                    return $"named:{GetFullName(branchObject)}";
-                }
+                if (typeName is "record" or "enum" or "fixed") return $"named:{GetFullName(branchObject)}";
 
                 return typeName;
             }
 
-            throw new AvroTypeResolutionException($"Unsupported union branch model type '{branch.GetType().FullName}'.");
+            throw new AvroTypeResolutionException(
+                $"Unsupported union branch model type '{branch.GetType().FullName}'.");
         }
 
         private static string GetFullName(Dictionary<string, object?> branchObject)
@@ -268,16 +217,12 @@ public sealed class DefaultAvroSchemaResolver : IAvroSchemaResolver
             if (!branchObject.TryGetValue("name", out var nameNode)
                 || nameNode is not string name
                 || string.IsNullOrWhiteSpace(name))
-            {
                 throw new AvroTypeResolutionException("Named union branch is missing required 'name'.");
-            }
 
             if (!branchObject.TryGetValue("namespace", out var namespaceNode)
                 || namespaceNode is not string schemaNamespace
                 || string.IsNullOrWhiteSpace(schemaNamespace))
-            {
                 return name;
-            }
 
             return $"{schemaNamespace}.{name}";
         }
@@ -291,10 +236,7 @@ public sealed class DefaultAvroSchemaResolver : IAvroSchemaResolver
         {
             if (branch is List<object> nestedUnion)
             {
-                foreach (var nestedBranch in nestedUnion)
-                {
-                    FlattenUnion(nestedBranch, destination);
-                }
+                foreach (var nestedBranch in nestedUnion) FlattenUnion(nestedBranch, destination);
 
                 return;
             }
@@ -315,16 +257,11 @@ public sealed class DefaultAvroSchemaResolver : IAvroSchemaResolver
         {
             var dataContract = type.GetCustomAttribute<DataContractAttribute>();
             if (dataContract is not null && !string.IsNullOrWhiteSpace(dataContract.Name))
-            {
                 return new AvroSchemaName(dataContract.Name!, dataContract.Namespace);
-            }
 
             var name = type.Name;
             var genericTickIndex = name.IndexOf('`');
-            if (genericTickIndex >= 0)
-            {
-                name = name[..genericTickIndex];
-            }
+            if (genericTickIndex >= 0) name = name[..genericTickIndex];
 
             return new AvroSchemaName(name, type.Namespace);
         }
@@ -443,10 +380,8 @@ public sealed class DefaultAvroSchemaResolver : IAvroSchemaResolver
 
             var args = dictionary.GetGenericArguments();
             if (args[0] != typeof(string))
-            {
                 throw new AvroTypeResolutionException(
                     $"Avro map keys must be strings. Type '{type.FullName}' uses key type '{args[0].FullName}'.");
-            }
 
             valueType = args[1];
             return true;
@@ -454,15 +389,9 @@ public sealed class DefaultAvroSchemaResolver : IAvroSchemaResolver
 
         private static bool ShouldBeNullable(Type type, MemberInfo? memberInfo)
         {
-            if (Nullable.GetUnderlyingType(type) is not null)
-            {
-                return true;
-            }
+            if (Nullable.GetUnderlyingType(type) is not null) return true;
 
-            if (type.IsValueType)
-            {
-                return false;
-            }
+            if (type.IsValueType) return false;
 
             return memberInfo is not null && IsNullableReference(memberInfo);
         }
@@ -477,28 +406,20 @@ public sealed class DefaultAvroSchemaResolver : IAvroSchemaResolver
             {
                 var firstArgument = memberNullable.ConstructorArguments[0];
 
-                if (firstArgument.ArgumentType == typeof(byte))
-                {
-                    return (byte)firstArgument.Value! == 2;
-                }
+                if (firstArgument.ArgumentType == typeof(byte)) return (byte)firstArgument.Value! == 2;
 
                 if (firstArgument.Value is IReadOnlyCollection<CustomAttributeTypedArgument> args
                     && args.Count > 0)
-                {
                     return (byte)args.First().Value! == 2;
-                }
             }
 
             var nullableContext = memberInfo.DeclaringType?.CustomAttributes
-                .FirstOrDefault(a => a.AttributeType.FullName == "System.Runtime.CompilerServices.NullableContextAttribute");
+                .FirstOrDefault(a =>
+                    a.AttributeType.FullName == "System.Runtime.CompilerServices.NullableContextAttribute");
 
-            if (nullableContext is null || nullableContext.ConstructorArguments.Count == 0)
-            {
-                return false;
-            }
+            if (nullableContext is null || nullableContext.ConstructorArguments.Count == 0) return false;
 
             return (byte)nullableContext.ConstructorArguments[0].Value! == 2;
         }
     }
 }
-

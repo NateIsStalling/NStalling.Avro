@@ -1,27 +1,22 @@
-using System;
-using System.Collections.Generic;
 using Avro;
 
 namespace NStalling.Avro;
 
 /// <summary>
-/// Traverses an Avro schema graph and enumerates all named schemas.
-/// 
-/// This is useful for discovering named schemas that may require CLR type mappings
-/// before Apache performs reflection-based deserialization.
+///     Traverses an Avro schema graph and enumerates all named schemas.
+///     This is useful for discovering named schemas that may require CLR type mappings
+///     before Apache performs reflection-based deserialization.
 /// </summary>
 public static class SchemaGraphWalker
 {
     /// <summary>
-    /// Enumerates all distinct named schemas reachable from the given root schema.
-    /// 
-    /// Traverses:
-    /// - RecordSchema fields
-    /// - UnionSchema branches
-    /// - ArraySchema element type
-    /// - MapSchema value type
-    /// 
-    /// Avoids infinite recursion by tracking visited fullnames.
+    ///     Enumerates all distinct named schemas reachable from the given root schema.
+    ///     Traverses:
+    ///     - RecordSchema fields
+    ///     - UnionSchema branches
+    ///     - ArraySchema element type
+    ///     - MapSchema value type
+    ///     Avoids infinite recursion by tracking visited fullnames.
     /// </summary>
     public static IEnumerable<NamedSchema> EnumerateNamedSchemas(Schema schema)
     {
@@ -53,38 +48,25 @@ public static class SchemaGraphWalker
         {
             case RecordSchema recordSchema:
                 foreach (var field in recordSchema.Fields)
-                {
-                    foreach (var nested in EnumerateNamedSchemasImpl(field.Schema, visited))
-                    {
-                        yield return nested;
-                    }
-                }
+                foreach (var nested in EnumerateNamedSchemasImpl(field.Schema, visited))
+                    yield return nested;
+
                 break;
 
             case UnionSchema unionSchema:
                 foreach (var branch in unionSchema.Schemas)
-                {
-                    foreach (var nested in EnumerateNamedSchemasImpl(branch, visited))
-                    {
-                        yield return nested;
-                    }
-                }
+                foreach (var nested in EnumerateNamedSchemasImpl(branch, visited))
+                    yield return nested;
+
                 break;
 
             case ArraySchema arraySchema:
-                foreach (var nested in EnumerateNamedSchemasImpl(arraySchema.ItemSchema, visited))
-                {
-                    yield return nested;
-                }
+                foreach (var nested in EnumerateNamedSchemasImpl(arraySchema.ItemSchema, visited)) yield return nested;
                 break;
 
             case MapSchema mapSchema:
-                foreach (var nested in EnumerateNamedSchemasImpl(mapSchema.ValueSchema, visited))
-                {
-                    yield return nested;
-                }
+                foreach (var nested in EnumerateNamedSchemasImpl(mapSchema.ValueSchema, visited)) yield return nested;
                 break;
         }
     }
 }
-

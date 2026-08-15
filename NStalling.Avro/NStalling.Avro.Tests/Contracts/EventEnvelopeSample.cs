@@ -6,73 +6,82 @@ namespace NStalling.Avro.Tests;
 public static class EventEnvelopeSample
 {
     public static readonly string UnionEnvelopeSchemaJson = """
-    {
-      "type": "record",
-      "name": "EventEnvelope",
-      "namespace": "Demo",
-      "fields": [
-        {"name": "EventId", "type": "string"},
-        {"name": "EventTimestamp", "type": "long"},
-        {
-          "name": "Payload",
-          "type": [
-            {
-              "type": "record",
-              "name": "CustomerCreated",
-              "fields": [
-                {"name": "CustomerId", "type": "string"},
-                {"name": "Name", "type": "string"}
-              ]
-            },
-            {
-              "type": "record",
-              "name": "OrderPlaced",
-              "fields": [
-                {"name": "OrderId", "type": "string"},
-                {"name": "CustomerId", "type": "string"},
-                {"name": "Amount", "type": "double"}
-              ]
-            }
-          ]
-        }
-      ]
-    }
-    """;
+                                                            {
+                                                              "type": "record",
+                                                              "name": "EventEnvelope",
+                                                              "namespace": "Demo",
+                                                              "fields": [
+                                                                {"name": "EventId", "type": "string"},
+                                                                {"name": "EventTimestamp", "type": "long"},
+                                                                {
+                                                                  "name": "Payload",
+                                                                  "type": [
+                                                                    {
+                                                                      "type": "record",
+                                                                      "name": "CustomerCreated",
+                                                                      "fields": [
+                                                                        {"name": "CustomerId", "type": "string"},
+                                                                        {"name": "Name", "type": "string"}
+                                                                      ]
+                                                                    },
+                                                                    {
+                                                                      "type": "record",
+                                                                      "name": "OrderPlaced",
+                                                                      "fields": [
+                                                                        {"name": "OrderId", "type": "string"},
+                                                                        {"name": "CustomerId", "type": "string"},
+                                                                        {"name": "Amount", "type": "double"}
+                                                                      ]
+                                                                    }
+                                                                  ]
+                                                                }
+                                                              ]
+                                                            }
+                                                            """;
 
     public static readonly string OrderEnvelopeSchemaJson = """
+                                                            {
+                                                              "type": "record",
+                                                              "name": "EventEnvelope",
+                                                              "namespace": "Demo",
+                                                              "fields": [
+                                                                {"name": "EventId", "type": "string"},
+                                                                {"name": "EventTimestamp", "type": "long"},
+                                                                {
+                                                                  "name": "Payload",
+                                                                  "type": {
+                                                                    "type": "record",
+                                                                    "name": "OrderPlaced",
+                                                                    "fields": [
+                                                                      {"name": "OrderId", "type": "string"},
+                                                                      {"name": "CustomerId", "type": "string"},
+                                                                      {"name": "Amount", "type": "double"}
+                                                                    ]
+                                                                  }
+                                                                }
+                                                              ]
+                                                            }
+                                                            """;
+
+    public static Schema ParseUnionEnvelopeSchema()
     {
-      "type": "record",
-      "name": "EventEnvelope",
-      "namespace": "Demo",
-      "fields": [
-        {"name": "EventId", "type": "string"},
-        {"name": "EventTimestamp", "type": "long"},
-        {
-          "name": "Payload",
-          "type": {
-            "type": "record",
-            "name": "OrderPlaced",
-            "fields": [
-              {"name": "OrderId", "type": "string"},
-              {"name": "CustomerId", "type": "string"},
-              {"name": "Amount", "type": "double"}
-            ]
-          }
-        }
-      ]
+        return Schema.Parse(UnionEnvelopeSchemaJson);
     }
-    """;
 
-    public static Schema ParseUnionEnvelopeSchema() => Schema.Parse(UnionEnvelopeSchemaJson);
-
-    public static Schema ParseOrderEnvelopeSchema() => Schema.Parse(OrderEnvelopeSchemaJson);
-
-    public static string DescribePayload(object payload) => payload switch
+    public static Schema ParseOrderEnvelopeSchema()
     {
-        CustomerCreated customer => $"Customer created: {customer.Name}",
-        OrderPlaced order => $"Order placed: ${order.Amount}",
-        _ => "Unknown event"
-    };
+        return Schema.Parse(OrderEnvelopeSchemaJson);
+    }
+
+    public static string DescribePayload(object payload)
+    {
+        return payload switch
+        {
+            CustomerCreated customer => $"Customer created: {customer.Name}",
+            OrderPlaced order => $"Order placed: ${order.Amount}",
+            _ => "Unknown event"
+        };
+    }
 
     [DataContract(Name = "EventEnvelope", Namespace = "Demo")]
     public sealed class EventEnvelope
@@ -102,5 +111,3 @@ public static class EventEnvelopeSample
         public double Amount { get; init; }
     }
 }
-
-

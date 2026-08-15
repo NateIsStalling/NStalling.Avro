@@ -6,8 +6,6 @@ namespace NStalling.Avro.Tests;
 
 public class AvroSerializerTests
 {
-    
-
     [Fact]
     public void SchemaAssistedDeserialize_RoundTripsPoco()
     {

@@ -1,8 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using Avro;
@@ -11,9 +8,9 @@ namespace NStalling.Avro;
 
 public sealed class DefaultAvroTypeResolver : IAvroTypeResolver
 {
+    private readonly IReadOnlyCollection<Type> _candidates;
     private readonly IReadOnlyDictionary<AvroSchemaName, IReadOnlyCollection<Type>> _explicitMappings;
     private readonly IReadOnlyDictionary<VersionedSchemaName, Type> _versionedMappings;
-    private readonly IReadOnlyCollection<Type> _candidates;
 
     public DefaultAvroTypeResolver(AvroTypeRegistry? registry = null)
     {
@@ -30,10 +27,8 @@ public sealed class DefaultAvroTypeResolver : IAvroTypeResolver
         string? schemaVersion = null)
     {
         if (!TryResolve(schema, declaredType, schemaVersion, out var type))
-        {
             throw new AvroTypeResolutionException(
                 $"Could not resolve CLR type for schema '{schema.Fullname}' with declared type '{declaredType?.FullName ?? "<none>"}' (version: '{schemaVersion ?? "<none>"}').");
-        }
 
         return type;
     }
@@ -66,20 +61,13 @@ public sealed class DefaultAvroTypeResolver : IAvroTypeResolver
         var schemaName = new AvroSchemaName(schema.Name, schema.Namespace);
         var resolvedType = ResolveSchemaName(schemaName, schemaVersion);
 
-        if (resolvedType is null)
-        {
-            return null;
-        }
+        if (resolvedType is null) return null;
 
         // Validate against declared type if provided
         if (declaredType is not null && declaredType != typeof(object))
-        {
             if (!declaredType.IsAssignableFrom(resolvedType))
-            {
                 throw new AvroTypeResolutionException(
                     $"Resolved type '{resolvedType.FullName}' is not assignable to declared type '{declaredType.FullName}' for schema '{schema.Fullname}'.");
-            }
-        }
 
         return resolvedType;
     }
@@ -87,43 +75,34 @@ public sealed class DefaultAvroTypeResolver : IAvroTypeResolver
     private Type? ResolveSchemaName(AvroSchemaName schemaName, string? schemaVersion = null)
     {
         if (string.IsNullOrWhiteSpace(schemaName.Name))
-        {
             throw new AvroTypeResolutionException("Schema name cannot be null, empty, or whitespace.");
-        }
 
         // 1. Explicit version-qualified mapping (highest precedence)
         if (!string.IsNullOrWhiteSpace(schemaVersion)
-            && _versionedMappings.TryGetValue(new VersionedSchemaName(schemaName, schemaVersion), out var versionedType))
-        {
+            && _versionedMappings.TryGetValue(new VersionedSchemaName(schemaName, schemaVersion),
+                out var versionedType))
             return versionedType;
-        }
 
         // 2. Explicit unqualified mapping
         if (_explicitMappings.TryGetValue(schemaName, out var explicitCandidates))
-        {
             return SingleOrThrow(schemaName, explicitCandidates, "explicit mapping");
-        }
 
         // 3. DataContract-derived mapping
         var dataContractCandidates = _candidates
             .Where(t => MatchesDataContract(t, schemaName))
             .ToArray();
 
-        if (dataContractCandidates.Length > 0)
-        {
-            return SingleOrThrow(schemaName, dataContractCandidates, "DataContract");
-        }
+        if (dataContractCandidates.Length > 0) return SingleOrThrow(schemaName, dataContractCandidates, "DataContract");
 
         // 4. Exact CLR fullname convention
         var fullNameCandidates = _candidates
             .Where(t => string.Equals(t.Name, schemaName.Name, StringComparison.Ordinal)
-                        && string.Equals(t.Namespace ?? string.Empty, schemaName.Namespace ?? string.Empty, StringComparison.Ordinal))
+                        && string.Equals(t.Namespace ?? string.Empty, schemaName.Namespace ?? string.Empty,
+                            StringComparison.Ordinal))
             .ToArray();
 
         if (fullNameCandidates.Length > 0)
-        {
             return SingleOrThrow(schemaName, fullNameCandidates, "CLR full-name convention");
-        }
 
         // 5. Simple-name convention (from explicitly registered assemblies)
         var simpleNameCandidates = _candidates
@@ -131,9 +110,7 @@ public sealed class DefaultAvroTypeResolver : IAvroTypeResolver
             .ToArray();
 
         if (simpleNameCandidates.Length > 0)
-        {
             return SingleOrThrow(schemaName, simpleNameCandidates, "simple-name convention");
-        }
 
         // 6. Not found
         return null;
@@ -142,10 +119,7 @@ public sealed class DefaultAvroTypeResolver : IAvroTypeResolver
     private static bool MatchesDataContract(Type type, AvroSchemaName schemaName)
     {
         var contract = type.GetCustomAttribute<DataContractAttribute>();
-        if (contract is null || string.IsNullOrWhiteSpace(contract.Name))
-        {
-            return false;
-        }
+        if (contract is null || string.IsNullOrWhiteSpace(contract.Name)) return false;
 
         var contractName = new AvroSchemaName(contract.Name, contract.Namespace);
         return contractName == schemaName;
@@ -154,10 +128,7 @@ public sealed class DefaultAvroTypeResolver : IAvroTypeResolver
     private static Type SingleOrThrow(AvroSchemaName schemaName, IEnumerable<Type> candidates, string source)
     {
         var matches = candidates.Distinct().ToArray();
-        if (matches.Length == 1)
-        {
-            return matches[0];
-        }
+        if (matches.Length == 1) return matches[0];
 
         var candidateList = string.Join(", ", matches.Select(t => t.FullName));
         throw new AvroTypeResolutionException(
@@ -193,10 +164,8 @@ public sealed class DefaultAvroTypeResolver : IAvroTypeResolver
         {
             var key = new VersionedSchemaName(mapping.SchemaName, mapping.SchemaVersion!);
             if (map.TryGetValue(key, out var existing) && existing != mapping.Type)
-            {
                 throw new AvroTypeResolutionException(
                     $"Invalid configuration: version-qualified schema '{mapping.SchemaName.FullName}' with version '{mapping.SchemaVersion}' maps to both '{existing.FullName}' and '{mapping.Type.FullName}'.");
-            }
 
             map[key] = mapping.Type;
         }
@@ -209,15 +178,9 @@ public sealed class DefaultAvroTypeResolver : IAvroTypeResolver
         var candidates = new HashSet<Type>(registry.RegisteredTypes);
 
         foreach (var assembly in registry.DiscoveryAssemblies)
-        {
-            foreach (var type in SafeGetTypes(assembly))
-            {
-                if (type is { IsAbstract: false, IsGenericTypeDefinition: false })
-                {
-                    candidates.Add(type);
-                }
-            }
-        }
+        foreach (var type in SafeGetTypes(assembly))
+            if (type is { IsAbstract: false, IsGenericTypeDefinition: false })
+                candidates.Add(type);
 
         return candidates.ToArray();
     }
@@ -252,10 +215,7 @@ public sealed class DefaultAvroTypeResolver : IAvroTypeResolver
     {
         nonNullBranch = null!;
         var branches = unionSchema.Schemas;
-        if (branches.Count != 2)
-        {
-            return false;
-        }
+        if (branches.Count != 2) return false;
 
         var first = branches[0];
         var second = branches[1];

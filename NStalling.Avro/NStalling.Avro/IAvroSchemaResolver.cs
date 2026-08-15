@@ -1,4 +1,3 @@
-using System;
 using System.Diagnostics.CodeAnalysis;
 using Avro;
 
@@ -12,4 +11,3 @@ public interface IAvroSchemaResolver
 
     Schema? ResolveOrDefault(Type type);
 }
-

@@ -1,14 +1,11 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
 
 namespace NStalling.Avro;
 
 public sealed class AvroUnionConfiguration
 {
-    private readonly IReadOnlyDictionary<Type, IReadOnlyList<Type>> _typeUnions;
     private readonly IReadOnlyDictionary<MemberKey, IReadOnlyList<Type>> _memberUnions;
+    private readonly IReadOnlyDictionary<Type, IReadOnlyList<Type>> _typeUnions;
 
     internal AvroUnionConfiguration(
         IReadOnlyDictionary<Type, IReadOnlyList<Type>> typeUnions,
@@ -22,7 +19,10 @@ public sealed class AvroUnionConfiguration
         new ReadOnlyDictionary<Type, IReadOnlyList<Type>>(new Dictionary<Type, IReadOnlyList<Type>>()),
         new ReadOnlyDictionary<MemberKey, IReadOnlyList<Type>>(new Dictionary<MemberKey, IReadOnlyList<Type>>()));
 
-    internal bool TryGetTypeUnion(Type type, out IReadOnlyList<Type> branches) => _typeUnions.TryGetValue(type, out branches!);
+    internal bool TryGetTypeUnion(Type type, out IReadOnlyList<Type> branches)
+    {
+        return _typeUnions.TryGetValue(type, out branches!);
+    }
 
     internal bool TryGetMemberUnion(Type declaringType, string memberName, out IReadOnlyList<Type> branches)
     {
@@ -34,8 +34,8 @@ public sealed class AvroUnionConfiguration
 
 public sealed class AvroUnionConfigurationBuilder
 {
-    private readonly Dictionary<Type, List<Type>> _typeUnions = new();
     private readonly Dictionary<AvroUnionConfiguration.MemberKey, List<Type>> _memberUnions = new();
+    private readonly Dictionary<Type, List<Type>> _typeUnions = new();
 
     public AvroUnionConfigurationBuilder Union<TBase>(Action<AvroUnionBranchBuilder<TBase>> configure)
     {
@@ -78,4 +78,3 @@ public sealed class AvroUnionConfigurationBuilder
             new ReadOnlyDictionary<AvroUnionConfiguration.MemberKey, IReadOnlyList<Type>>(memberMap));
     }
 }
-

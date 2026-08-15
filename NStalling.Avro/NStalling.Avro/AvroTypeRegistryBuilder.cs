@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 
 namespace NStalling.Avro;
@@ -8,8 +5,8 @@ namespace NStalling.Avro;
 public sealed class AvroTypeRegistryBuilder
 {
     private readonly HashSet<Assembly> _assemblies = new();
-    private readonly HashSet<Type> _types = new();
     private readonly List<SchemaMapping> _mappings = new();
+    private readonly HashSet<Type> _types = new();
 
     public AvroTypeRegistryBuilder FromAssembly(Assembly assembly)
     {
@@ -17,9 +14,15 @@ public sealed class AvroTypeRegistryBuilder
         return this;
     }
 
-    public AvroTypeRegistryBuilder FromAssemblyContaining<T>() => FromAssembly(typeof(T).Assembly);
+    public AvroTypeRegistryBuilder FromAssemblyContaining<T>()
+    {
+        return FromAssembly(typeof(T).Assembly);
+    }
 
-    public AvroTypeRegistryBuilder Add<T>() => Add(typeof(T));
+    public AvroTypeRegistryBuilder Add<T>()
+    {
+        return Add(typeof(T));
+    }
 
     public AvroTypeRegistryBuilder Add(Type type)
     {
@@ -27,7 +30,10 @@ public sealed class AvroTypeRegistryBuilder
         return this;
     }
 
-    public AvroTypeRegistryBuilder Map<T>(AvroSchemaName schemaName, string? schemaVersion = null) => Map(typeof(T), schemaName, schemaVersion);
+    public AvroTypeRegistryBuilder Map<T>(AvroSchemaName schemaName, string? schemaVersion = null)
+    {
+        return Map(typeof(T), schemaName, schemaVersion);
+    }
 
     public AvroTypeRegistryBuilder Map(Type type, AvroSchemaName schemaName, string? schemaVersion = null)
     {
@@ -71,9 +77,8 @@ public sealed class AvroTypeRegistry
 
     public IReadOnlyCollection<AvroTypeRegistryBuilder.SchemaMapping> Mappings { get; }
 
-    public static AvroTypeRegistry Empty { get; } = new AvroTypeRegistry(
+    public static AvroTypeRegistry Empty { get; } = new(
         Array.Empty<Assembly>(),
         Array.Empty<Type>(),
         Array.Empty<AvroTypeRegistryBuilder.SchemaMapping>());
 }
-
