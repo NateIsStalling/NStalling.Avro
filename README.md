@@ -1,7 +1,7 @@
 # NStalling.Avro
 
 A thin extension over [Apache.Avro](https://www.nuget.org/packages/Apache.Avro) that adds **runtime CLR
-type resolution** and **polymorphic materialization** to reflection-based Avro deserialization.
+type resolution** and **polymorphic type annotations** to reflection-based Avro deserialization.
 
 Apache.Avro understands Avro and performs the decoding. NStalling.Avro supplies the application CLR type
 to materialize for a given Avro record schema — including the cases Apache cannot infer on its own:
@@ -219,4 +219,4 @@ dotnet test  NStalling.Avro/NStalling.Avro.sln
 
 ## License
 
-See [LICENSE](LICENSE).
+Apache License 2.0. See [LICENSE](LICENSE).
