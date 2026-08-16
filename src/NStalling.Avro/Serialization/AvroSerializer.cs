@@ -162,7 +162,7 @@ namespace NStalling.Avro.Serialization
         /// </summary>
         internal object ReadCore(byte[] buffer, Schema writerSchema, Schema readerSchema, Type type, string? schemaVersion)
         {
-            var cache = _adapter.BuildClassCache(writerSchema, type, schemaVersion);
+            var cache = _adapter.BuildClassCache(readerSchema, type, schemaVersion);
 
             var (ctor, read) = ReaderApi.GetOrAdd(type, static t =>
             {
