@@ -28,10 +28,11 @@ dotnet run --project src/NStalling.Avro.Samples/EventEnvelope
 dotnet run --project src/NStalling.Avro.Samples/Annotations
 ```
 
-Solution layout: `NStalling.Avro` (library, `netstandard2.1`), `NStalling.Avro.Tests` (xUnit, `net10.0`),
-`NStalling.Avro.Samples/{EventEnvelope,Annotations}` (runnable samples, `net10.0`). Tests reference the
-library via `InternalsVisibleTo`, so tests routinely exercise `internal` types directly (resolver,
-`AvroTypeIndex`, adapters) rather than only the public surface.
+Solution layout: `NStalling.Avro` (core library, `netstandard2.1`), `NStalling.Avro.DependencyInjection`
+(the `AddAvro` extension for `Microsoft.Extensions.DependencyInjection`), `NStalling.Avro.Tests` (xUnit,
+`net10.0`), `NStalling.Avro.Samples/{EventEnvelope,Annotations}` (runnable samples, `net10.0`). Tests
+reference the library via `InternalsVisibleTo`, so tests routinely exercise `internal` types directly
+(resolver, `AvroTypeIndex`, adapters) rather than only the public surface.
 
 ## Architecture
 
@@ -122,10 +123,11 @@ distinct from read-time failures. Cancellation and ordinary argument-validation 
   `ValueDirectedPayloadBinder`, `DiscriminatorLocator`).
 - `src/NStalling.Avro/Serialization/` — `AvroSerializer` (the public read entry point) and serialization
   exception types.
-- `src/NStalling.Avro/DependencyInjection/` — `AddAvro` extension for `Microsoft.Extensions.DependencyInjection`.
-- `src/NStalling.Avro.Tests/` mirrors this by concern (`Resolution/`, `Provider/`, `Serialization/`,
-  `DependencyInjection/`), with shared fixtures (domain types, hand-built schemas, an Avro write helper) in
-  `Fixtures/`.
+- `src/NStalling.Avro.DependencyInjection/` — `AddAvro` extension for `Microsoft.Extensions.DependencyInjection`,
+  a separate project from the core library.
+- `src/NStalling.Avro.Tests/` mirrors the core library by concern (`Resolution/`, `Provider/`,
+  `Serialization/`, `DependencyInjection/`), with shared fixtures (domain types, hand-built schemas, an
+  Avro write helper) in `Fixtures/`.
 
 ## Conventions to preserve
 

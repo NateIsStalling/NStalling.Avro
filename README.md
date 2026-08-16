@@ -215,8 +215,9 @@ var config = new AvroOptions()
 var result = config.Serializer.Deserialize<Envelope>(bytes, schema);
 ```
 
-With `Microsoft.Extensions.DependencyInjection`, `AddAvro` compiles eagerly so configuration defects
-surface during registration.
+The `NStalling.Avro.DependencyInjection` project adds `AddAvro` for
+`Microsoft.Extensions.DependencyInjection`. It compiles eagerly so configuration defects surface during
+registration.
 
 ```csharp
 using NStalling.Avro.DependencyInjection;

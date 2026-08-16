@@ -1,6 +1,4 @@
-using System;
 using Microsoft.Extensions.DependencyInjection;
-using NStalling.Avro;
 using NStalling.Avro.Serialization;
 
 namespace NStalling.Avro.DependencyInjection

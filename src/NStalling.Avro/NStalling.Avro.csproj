@@ -9,11 +9,14 @@
 
     <ItemGroup>
       <PackageReference Include="Apache.Avro" Version="1.12.1" />
-      <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
     </ItemGroup>
 
     <ItemGroup>
       <InternalsVisibleTo Include="NStalling.Avro.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="DependencyInjection\" />
     </ItemGroup>
 
 </Project>
