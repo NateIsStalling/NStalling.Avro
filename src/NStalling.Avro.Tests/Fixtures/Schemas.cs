@@ -42,5 +42,32 @@ namespace NStalling.Avro.Tests.Fixtures
             {""name"":""SchemaVersion"",""type"":[""null"",""string""]},
             {""name"":""Payload"",""type"":""bytes""}
           ]}";
+
+        // Envelope with a single nested Customer record (version supplied externally, inherited by nesting).
+        public const string VersionedRecordEnvelope = @"{
+          ""type"":""record"",""name"":""VersionedRecordEnvelope"",""namespace"":""Acme.Events"",
+          ""fields"":[
+            {""name"":""EventId"",""type"":""string""},
+            {""name"":""Customer"",""type"":
+               {""type"":""record"",""name"":""Customer"",""namespace"":""Acme.Events"",""fields"":[{""name"":""Name"",""type"":""string""}]}}
+          ]}";
+
+        // Envelope with an array of nested Customer records.
+        public const string VersionedArrayEnvelope = @"{
+          ""type"":""record"",""name"":""VersionedArrayEnvelope"",""namespace"":""Acme.Events"",
+          ""fields"":[
+            {""name"":""EventId"",""type"":""string""},
+            {""name"":""Customers"",""type"":{""type"":""array"",""items"":
+               {""type"":""record"",""name"":""Customer"",""namespace"":""Acme.Events"",""fields"":[{""name"":""Name"",""type"":""string""}]}}}
+          ]}";
+
+        // Envelope with a map of nested Customer records.
+        public const string VersionedMapEnvelope = @"{
+          ""type"":""record"",""name"":""VersionedMapEnvelope"",""namespace"":""Acme.Events"",
+          ""fields"":[
+            {""name"":""EventId"",""type"":""string""},
+            {""name"":""Customers"",""type"":{""type"":""map"",""values"":
+               {""type"":""record"",""name"":""Customer"",""namespace"":""Acme.Events"",""fields"":[{""name"":""Name"",""type"":""string""}]}}}
+          ]}";
     }
 }

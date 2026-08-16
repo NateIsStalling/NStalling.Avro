@@ -29,6 +29,7 @@ namespace NStalling.Avro.Provider
                 "the referenced Apache.Avro version is incompatible with NStalling.Avro.");
 
         private readonly IAvroTypeResolver _resolver;
+        private readonly bool _inheritNestedSchemaVersion;
 
         private static readonly ConcurrentDictionary<Type, byte> RegisteredOpaqueConverterTypes = new();
 
@@ -43,8 +44,14 @@ namespace NStalling.Avro.Provider
         }
 
         public ApacheReflectionAdapter(IAvroTypeResolver resolver)
+            : this(resolver, inheritNestedSchemaVersion: false)
+        {
+        }
+
+        public ApacheReflectionAdapter(IAvroTypeResolver resolver, bool inheritNestedSchemaVersion)
         {
             _resolver = resolver ?? throw new ArgumentNullException(nameof(resolver));
+            _inheritNestedSchemaVersion = inheritNestedSchemaVersion;
         }
 
         /// <summary>
@@ -155,12 +162,15 @@ namespace NStalling.Avro.Provider
                     var clrType = DetermineRecordType(record, declaredType, version, isRoot);
                     collected[record.Fullname] = (record, clrType);
 
+                    // When inheritance is enabled the parent/root version flows to nested resolutions;
+                    // otherwise nested records are unqualified (the polymorphism layer may supply version
+                    // context explicitly for opaque payloads).
+                    var nestedVersion = _inheritNestedSchemaVersion ? version : null;
+
                     foreach (var field in record.Fields)
                     {
                         var propertyType = GetPropertyType(clrType, field.Name);
-                        // Nested records are unqualified by default; the higher polymorphism layer may
-                        // supply nested version context explicitly.
-                        Collect(field.Schema, propertyType, null, isRoot: false, collected);
+                        Collect(field.Schema, propertyType, nestedVersion, isRoot: false, collected);
                     }
 
                     break;
@@ -179,11 +189,21 @@ namespace NStalling.Avro.Provider
                     break;
 
                 case ArraySchema array:
-                    Collect(array.ItemSchema, GetElementType(declaredType), null, isRoot: false, collected);
+                    Collect(
+                        array.ItemSchema,
+                        GetElementType(declaredType),
+                        _inheritNestedSchemaVersion ? version : null,
+                        isRoot: false,
+                        collected);
                     break;
 
                 case MapSchema map:
-                    Collect(map.ValueSchema, GetMapValueType(declaredType), null, isRoot: false, collected);
+                    Collect(
+                        map.ValueSchema,
+                        GetMapValueType(declaredType),
+                        _inheritNestedSchemaVersion ? version : null,
+                        isRoot: false,
+                        collected);
                     break;
             }
         }

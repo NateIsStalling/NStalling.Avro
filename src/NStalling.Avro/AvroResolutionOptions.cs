@@ -5,12 +5,13 @@ namespace NStalling.Avro
     public sealed class AvroResolutionOptions
     {
         /// <summary>
-        /// When enabled, nested/member resolutions inherit the parent/root schema version unless a more
-        /// specific member version source applies. Disabled by default: nested records are unqualified.
+        /// When enabled, schema-directed nested resolutions (record members, array items, and map values)
+        /// and opaque-payload polymorphic members inherit the parent/root schema version, unless a more
+        /// specific member version source applies. Disabled by default: nested resolutions are unqualified.
         /// </summary>
         public bool InheritSchemaVersionEnabled { get; private set; }
 
-        /// <summary>Enables parent/root version inheritance for nested resolutions.</summary>
+        /// <summary>Enables parent/root version inheritance for nested and member resolutions.</summary>
         public AvroResolutionOptions InheritSchemaVersion()
         {
             InheritSchemaVersionEnabled = true;

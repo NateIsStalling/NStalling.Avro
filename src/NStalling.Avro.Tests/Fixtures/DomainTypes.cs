@@ -78,4 +78,55 @@ namespace NStalling.Avro.Tests.Fixtures
     {
         public string Sku { get; set; } = "";
     }
+
+    // ---- Nested schema-directed version-inheritance fixtures ----
+    // Read-side envelopes whose nested Customer member(s) are version-qualified (Legacy=1, Current=2) and
+    // therefore only resolvable when the root version is inherited into the nested resolution. Members are
+    // typed as object because Apache's reflect reader decodes a bare (non-union) record/array/map only into
+    // a class-typed member; the resolved concrete type is what actually lands in the object slot.
+
+    public sealed class VersionedRecordEnvelope
+    {
+        public string EventId { get; set; } = "";
+
+        public object Customer { get; set; } = null!;
+    }
+
+    public sealed class VersionedArrayEnvelope
+    {
+        public string EventId { get; set; } = "";
+
+        public System.Collections.Generic.List<object> Customers { get; set; } = new();
+    }
+
+    public sealed class VersionedMapEnvelope
+    {
+        public string EventId { get; set; } = "";
+
+        public System.Collections.Generic.Dictionary<string, object> Customers { get; set; } = new();
+    }
+
+    // Concrete write-side counterparts: the nested member is a concrete CLR type, so the writer binds it by
+    // type without consulting the resolver (mirrors OpaqueEnvelopeWire).
+
+    public sealed class VersionedRecordEnvelopeWire
+    {
+        public string EventId { get; set; } = "";
+
+        public LegacyCustomer Customer { get; set; } = new();
+    }
+
+    public sealed class VersionedArrayEnvelopeWire
+    {
+        public string EventId { get; set; } = "";
+
+        public System.Collections.Generic.List<LegacyCustomer> Customers { get; set; } = new();
+    }
+
+    public sealed class VersionedMapEnvelopeWire
+    {
+        public string EventId { get; set; } = "";
+
+        public System.Collections.Generic.Dictionary<string, LegacyCustomer> Customers { get; set; } = new();
+    }
 }

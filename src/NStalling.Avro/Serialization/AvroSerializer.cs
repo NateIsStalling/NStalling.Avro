@@ -24,14 +24,17 @@ namespace NStalling.Avro.Serialization
         private static readonly ConcurrentDictionary<Type, (ConstructorInfo Ctor, MethodInfo Read)> ReaderApi = new();
 
         public AvroSerializer(IAvroTypeResolver resolver)
-            : this(resolver, null)
+            : this(resolver, null, inheritNestedSchemaVersion: false)
         {
         }
 
-        internal AvroSerializer(IAvroTypeResolver resolver, IPolymorphicBindingProvider? bindingProvider)
+        internal AvroSerializer(
+            IAvroTypeResolver resolver,
+            IPolymorphicBindingProvider? bindingProvider,
+            bool inheritNestedSchemaVersion = false)
         {
             _resolver = resolver ?? throw new ArgumentNullException(nameof(resolver));
-            _adapter = new ApacheReflectionAdapter(resolver);
+            _adapter = new ApacheReflectionAdapter(resolver, inheritNestedSchemaVersion);
             _bindingProvider = bindingProvider;
             _binder = bindingProvider is null ? null : new ValueDirectedPayloadBinder(resolver, this);
         }

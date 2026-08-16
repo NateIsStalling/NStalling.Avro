@@ -43,7 +43,10 @@ namespace NStalling.Avro
             ApacheReflectionAdapter.EnsureOpaquePayloadConverters(declaredMemberTypes);
 
             var provider = new PolymorphicBindingRegistry(bindings);
-            var serializer = new AvroSerializer(resolver, provider);
+            var serializer = new AvroSerializer(
+                resolver,
+                provider,
+                options.ResolutionOptions.InheritSchemaVersionEnabled);
             return new AvroConfiguration(resolver, serializer);
         }
     }
