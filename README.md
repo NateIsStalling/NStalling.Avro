@@ -320,7 +320,7 @@ wrapped.
 
 ## Samples
 
-Runnable samples live under [`samples/`](samples):
+Runnable samples live under [`NStalling.Avro.Samples`](src/NStalling.Avro.Samples):
 
 - **EventEnvelope** — resolves an `object` payload backed by an Avro union of record branches.
 - **Annotations** — demonstrates `[AvroTypeDiscriminator]`, `[AvroVersionDiscriminator]`,
@@ -328,8 +328,8 @@ Runnable samples live under [`samples/`](samples):
   Avro name.
 
 ```bash
-dotnet run --project samples/EventEnvelope
-dotnet run --project samples/Annotations
+dotnet run --project NStalling.Avro.Samples/EventEnvelope
+dotnet run --project NStalling.Avro.Samples/Annotations
 ```
 
 ## Build and test
