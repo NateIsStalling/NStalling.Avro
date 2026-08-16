@@ -126,6 +126,56 @@ namespace NStalling.Avro.Tests.Serialization
         }
 
         [Fact]
+        public void UseFallbackType_OnClrMappingFailure_DecodesIntoFallback()
+        {
+            // The inner writer schema IS identified (CustomerCreated), but the resolver maps no CLR type to
+            // that record (only FallbackEvent is registered). UseFallbackType therefore diverts this
+            // CLR-mapping failure and decodes the payload into the allowlisted fallback type.
+            var source = new MapPayloadSchemaSource(new Dictionary<string, Schema>
+            {
+                ["CustomerCreated"] = Schema.Parse(Schemas.CustomerCreatedRecord)
+            });
+
+            var config = new AvroOptions()
+                .Types(t => t.Add<FallbackEvent>())
+                .Polymorphic<OpaqueEnvelope>(p => p.Member(e => e.Payload)
+                    .DiscriminateBy(e => e.EventType)
+                    .VersionBy(e => e.SchemaVersion)
+                    .PayloadSchema(source)
+                    .FallbackTo<FallbackEvent>())
+                .Build();
+
+            var bytes = WriteEnvelope("CustomerCreated", null, InnerCustomerCreated("c9"));
+
+            var result = config.Serializer.Deserialize<OpaqueEnvelope>(bytes, Schema.Parse(Schemas.OpaqueEnvelope));
+
+            var fallback = Assert.IsType<FallbackEvent>(result.Payload);
+            Assert.Equal("c9", fallback.CustomerId);
+        }
+
+        [Fact]
+        public void UseFallbackType_OnUnrecognizedIdentity_Throws()
+        {
+            // No inner writer schema is obtainable (discriminator not found), so the bytes cannot be
+            // decoded and the fallback CLR type is inapplicable: UseFallbackType fails like Fail here.
+            var source = new MapPayloadSchemaSource(new Dictionary<string, Schema>());
+
+            var config = new AvroOptions()
+                .Types(t => t.Add<FallbackEvent>())
+                .Polymorphic<OpaqueEnvelope>(p => p.Member(e => e.Payload)
+                    .DiscriminateBy(e => e.EventType)
+                    .PayloadSchema(source)
+                    .FallbackTo<FallbackEvent>())
+                .Build();
+
+            var bytes = WriteEnvelope("Unknown", null, InnerCustomerCreated("c10"));
+
+            var ex = Assert.Throws<AvroTypeResolutionException>(() =>
+                config.Serializer.Deserialize<OpaqueEnvelope>(bytes, Schema.Parse(Schemas.OpaqueEnvelope)));
+            Assert.Contains("fallback type cannot be used", ex.Message);
+        }
+
+        [Fact]
         public void InterfaceDeclaredOpaqueMember_FailsConfiguration()
         {
             var source = new MapPayloadSchemaSource(new Dictionary<string, Schema>());

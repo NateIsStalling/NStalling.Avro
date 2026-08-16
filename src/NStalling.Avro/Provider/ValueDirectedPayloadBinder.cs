@@ -7,9 +7,12 @@ namespace NStalling.Avro.Provider
     /// <summary>
     /// Executes the value-directed second-pass state machine for a single polymorphic member against a
     /// fully decoded outer object. Discriminators are read from the completed outer datum, so behavior is
-    /// independent of field order. The unrecognized-type-discriminator policy governs only failure to
-    /// identify type/schema identity; payload-schema, CLR-resolution, and inner-decode failures are typed
-    /// separately and are never diverted by that policy.
+    /// independent of field order. The unrecognized-type-discriminator policy governs failure to identify
+    /// type/schema identity (via <see cref="AvroUnrecognizedTypeDiscriminatorHandling.Fail"/> /
+    /// <see cref="AvroUnrecognizedTypeDiscriminatorHandling.PreservePayload"/>) and, via
+    /// <see cref="AvroUnrecognizedTypeDiscriminatorHandling.UseFallbackType"/>, a CLR-mapping failure for
+    /// an otherwise-identified payload schema. Payload-schema infrastructure failures and inner-decode
+    /// failures are typed separately and are never diverted by that policy.
     /// </summary>
     internal sealed class ValueDirectedPayloadBinder
     {
@@ -127,13 +130,15 @@ namespace NStalling.Avro.Provider
                         return (resolved, false);
                     }
 
+                    // UseFallbackType diverts this CLR-mapping failure to the configured fallback type; the
+                    // inner writer schema is known, so the bytes remain decodable into that type.
                     if (binding.Handling == AvroUnrecognizedTypeDiscriminatorHandling.UseFallbackType
                         && binding.FallbackType is not null)
                     {
                         return (binding.FallbackType, false);
                     }
 
-                    // Known schema, no CLR mapping: a resolution failure, never policy-diverted.
+                    // Known schema but no CLR mapping and no fallback configured: a CLR-resolution failure.
                     throw new AvroTypeResolutionException(
                         $"No CLR mapping for identified payload record '{record.Fullname}' at '{path}'.")
                     {

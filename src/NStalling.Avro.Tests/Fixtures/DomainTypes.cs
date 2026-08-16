@@ -25,6 +25,15 @@ namespace NStalling.Avro.Tests.Fixtures
         public string OrderId { get; set; } = "";
     }
 
+    // Allowlisted fallback event used to exercise UseFallbackType on a CLR-mapping failure: it carries a
+    // CustomerId property so a CustomerCreated payload (writer schema known) can decode into it even though
+    // the resolver maps no CLR type to that record.
+    [DataContract(Name = "FallbackEvent", Namespace = "Acme.Events")]
+    public sealed class FallbackEvent : EventBase
+    {
+        public string CustomerId { get; set; } = "";
+    }
+
     public sealed class EnvelopeObject
     {
         public string EventId { get; set; } = "";
