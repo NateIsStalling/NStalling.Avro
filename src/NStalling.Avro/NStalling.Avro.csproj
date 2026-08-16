@@ -7,6 +7,13 @@
         <ImplicitUsings>disable</ImplicitUsings>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <PackageId>NStalling.Avro</PackageId>
+        <Description>A thin extension over Apache.Avro that adds runtime CLR type resolution to reflection-based Avro deserialization: object/interface/abstract members, union record branches, version-qualified records sharing one Avro name, and opaque payloads.</Description>
+        <PackageTags>avro;apache-avro;deserialization;serialization;union-types;polymorphic-deserialization</PackageTags>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+    </PropertyGroup>
+
     <ItemGroup>
       <PackageReference Include="Apache.Avro" Version="1.12.1" />
     </ItemGroup>
@@ -16,7 +23,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="DependencyInjection\" />
+      <None Include="..\..\README.md" Pack="true" PackagePath="\" />
     </ItemGroup>
 
 </Project>

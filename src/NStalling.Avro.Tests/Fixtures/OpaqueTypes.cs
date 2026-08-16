@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 using Avro;
 using NStalling.Avro;
+using NStalling.Avro.Serialization;
 
 namespace NStalling.Avro.Tests.Fixtures
 {
