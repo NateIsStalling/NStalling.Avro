@@ -49,6 +49,22 @@ namespace NStalling.Avro.Tests.Fixtures
             => throw new System.InvalidOperationException("registry unavailable");
     }
 
+    /// <summary>
+    /// Test payload schema source that violates its contract by reporting success while producing a null
+    /// schema. The value-directed engine must surface this as an <see cref="AvroPayloadSchemaException"/>
+    /// rather than treating it as an ordinary unrecognized discriminator.
+    /// </summary>
+    internal sealed class NullSchemaContractViolatingSource : IAvroPayloadSchemaSource
+    {
+        public bool TryGetWriterSchema(AvroPayloadSchemaContext context, [NotNullWhen(true)] out Schema? schema)
+        {
+            // Deliberately violate the [NotNullWhen(true)] contract: null! keeps the compile clean while the
+            // runtime still hands back a null schema alongside a true result.
+            schema = null!;
+            return true;
+        }
+    }
+
     // Reader-side opaque envelope configured entirely through property-level marker attributes. Exercises
     // attribute-driven discriminator/payload discovery end-to-end; fields are intentionally not used because
     // Apache's reflect reader binds record fields only to CLR properties.

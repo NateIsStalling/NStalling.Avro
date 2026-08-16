@@ -97,6 +97,26 @@ namespace NStalling.Avro.Tests.Serialization
         }
 
         [Fact]
+        public void PayloadSchemaSource_ReturnsTrueWithNullSchema_SurfacesAsPayloadSchemaException()
+        {
+            // Returning true while producing a null schema violates the source contract; it must surface as
+            // AvroPayloadSchemaException rather than being routed through PreservePayload/fallback handling.
+            var config = new AvroOptions()
+                .Types(t => t.Add<CustomerCreated>())
+                .Polymorphic<OpaqueEnvelope>(p => p.Member(e => e.Payload)
+                    .DiscriminateBy(e => e.EventType)
+                    .VersionBy(e => e.SchemaVersion)
+                    .PayloadSchema(new NullSchemaContractViolatingSource())
+                    .OnUnrecognizedTypeDiscriminator(AvroUnrecognizedTypeDiscriminatorHandling.PreservePayload))
+                .Build();
+
+            var bytes = WriteEnvelope("CustomerCreated", null, InnerCustomerCreated("c5"));
+
+            Assert.Throws<AvroPayloadSchemaException>(() =>
+                config.Serializer.Deserialize<OpaqueEnvelope>(bytes, Schema.Parse(Schemas.OpaqueEnvelope)));
+        }
+
+        [Fact]
         public void CorruptInnerPayload_SurfacesAsPayloadDecodeException()
         {
             var source = new MapPayloadSchemaSource(new Dictionary<string, Schema>

@@ -78,10 +78,26 @@ namespace NStalling.Avro.Provider
                 }
             }
 
-            if (!identified || innerSchema is null)
+            if (!identified)
             {
                 ApplyUnrecognizedTypeIdentity(binding, path, typeDiscriminator, effectiveVersion);
                 return;
+            }
+
+            // A source that returns success but yields a null schema has violated its [NotNullWhen(true)]
+            // contract; surface it as a source failure rather than routing it through the
+            // unrecognized-type-discriminator policy (which is reserved for an honest not-found).
+            if (innerSchema is null)
+            {
+                throw new AvroPayloadSchemaException(
+                    $"The payload schema source for '{path}' reported success but produced a null schema, " +
+                    "violating its contract; return false to signal an ordinary unrecognized discriminator.")
+                {
+                    Path = path,
+                    DiscriminatorPath = binding.TypeDiscriminator?.Path,
+                    DiscriminatorValue = typeDiscriminator,
+                    SchemaVersion = effectiveVersion
+                };
             }
 
             // Stage 3 — resolve the CLR type for the identified schema.
