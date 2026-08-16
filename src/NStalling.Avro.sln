@@ -1,5 +1,4 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NStalling.Avro", "NStalling.Avro\NStalling.Avro.csproj", "{6DDD6119-9439-46AD-85E3-7C103CEDFF7E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NStalling.Avro.Tests", "NStalling.Avro.Tests\NStalling.Avro.Tests.csproj", "{B11EEBF6-F375-4E83-8CE7-C89FFDCF76CA}"

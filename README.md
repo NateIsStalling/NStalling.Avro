@@ -1,52 +1,47 @@
 # NStalling.Avro
 
 A thin extension over [Apache.Avro](https://www.nuget.org/packages/Apache.Avro) that adds **runtime CLR
-type resolution** and **polymorphic type annotations** to reflection-based Avro deserialization.
+type resolution** to reflection-based Avro deserialization.
 
 Apache.Avro understands Avro and performs the decoding. NStalling.Avro supplies the application CLR type
-to materialize for a given Avro record schema — including the cases Apache cannot infer on its own:
-`object`, interface, and abstract members, union record branches, and version-qualified records that share
-one Avro name.
+to materialize for a given Avro record schema — including `object`, interface, and abstract members,
+union record branches, and version-qualified records that share one Avro name.
 
 - **Targets:** `netstandard2.1`
 - **Depends on:** `Apache.Avro` 1.12.1
 
 ## Why
 
-Apache's reflect reader materializes a record by mapping its schema full name to a single concrete CLR
-type. That falls short when:
+Apache's reflection machinery ultimately associates an Avro record schema with a concrete CLR type. That
+becomes limiting when:
 
 - a member is declared as `object`, an interface, or an abstract base;
-- a union has multiple record branches; or
+- a union has multiple record branches;
 - the same Avro full name must map to **different** CLR types depending on an externally supplied schema
-  version.
+  version; or
+- an outer record carries an inner payload as opaque `bytes`, with its writer schema supplied separately.
 
-NStalling.Avro fills exactly these gaps and nothing more. It does **not** generate schemas, implement a
-codec, add a schema registry client, or replace any Apache behavior.
+NStalling.Avro stays focused on CLR materialization around Apache's reflection reader. It does **not**
+generate schemas, implement a codec, add a schema registry client, or replace Apache's Avro behavior.
 
 ## Install
 
-Add a project/package reference to `NStalling.Avro` (and `Apache.Avro`, which comes transitively).
+> **NuGet package coming soon.**
 
-## Namespaces
-
-| Namespace | Contents |
-|---|---|
-| `NStalling.Avro` | Configuration, type registry/resolver, attributes, options |
-| `NStalling.Avro.Serialization` | `AvroSerializer` and the exception hierarchy |
-| `NStalling.Avro.DependencyInjection` | `AddAvro` extension for `IServiceCollection` |
+For now, reference the project directly from source.
 
 ## Quick start
 
-Register the CLR types behind your Avro records, build a resolver, and deserialize. When a member is
-`object`/interface/abstract or a union branch, NStalling resolves the concrete type for you.
+Register the CLR types behind your Avro records, build a resolver, and deserialize. When a record is
+encountered through an `object`, interface, abstract member, or Avro union branch, NStalling resolves the
+concrete CLR type for Apache.
 
 ```csharp
 using Avro;
 using NStalling.Avro;
 using NStalling.Avro.Serialization;
 
-// 1. Map Avro records to CLR types (via [DataContract], CLR full name, or explicit Map).
+// 1. Register CLR types behind your Avro records.
 var resolver = new AvroTypeRegistry()
     .Add<CustomerCreated>()
     .Add<OrderPlaced>()
@@ -54,7 +49,7 @@ var resolver = new AvroTypeRegistry()
 
 var serializer = new AvroSerializer(resolver);
 
-// 2. Deserialize. The `object`/interface payload materializes as the concrete record type.
+// 2. Deserialize. The payload materializes as the concrete record type.
 var schema = Schema.Parse(envelopeSchemaJson);
 var envelope = serializer.Deserialize<Envelope>(bytes, schema);
 
@@ -68,153 +63,280 @@ switch (envelope.Payload)
 
 ```csharp
 [DataContract(Name = "CustomerCreated", Namespace = "Acme.Events")]
-public sealed class CustomerCreated { public string CustomerId { get; init; } = ""; }
+public sealed class CustomerCreated
+{
+    public string CustomerId { get; init; } = "";
+}
 
 public sealed class Envelope
 {
     public string EventId { get; init; } = "";
-    public object Payload { get; init; } = null!; // materialized as the concrete record type
+    public object Payload { get; init; } = null!;
 }
 ```
 
 ## Registering types
 
-`AvroTypeRegistry` derives an Avro full name from `[DataContract]` (`Namespace + "." + Name`) **and** from
-the exact CLR full name, or you can map explicitly. Simple-name matching is never used, and versions are
-never inferred from CLR names.
+`AvroTypeRegistry` can derive an Avro full name from `[DataContract]` (`Namespace + "." + Name`) or from
+the exact CLR full name, or you can map a type explicitly.
+
+Simple-name matching is never used, and schema versions are never inferred from CLR names.
 
 ```csharp
 var resolver = new AvroTypeRegistry()
-    .Add<CustomerCreated>()                                   // [DataContract] + CLR full name
-    .Map<OrderPlaced>("OrderPlaced", "Acme.Events")           // explicit Avro name
-    .Map<Product>("Product", "Acme.Events", schemaVersion: "3") // explicit, version-qualified
-    .FromAssemblyContaining<CustomerCreated>()                // controlled assembly scan
+    .Add<CustomerCreated>()
+    .Map<OrderPlaced>(
+        "OrderPlaced",
+        "Acme.Events")
+    .Map<Product>(
+        "Product",
+        "Acme.Events",
+        schemaVersion: "3")
+    .FromAssemblyContaining<CustomerCreated>()
     .BuildResolver();
 ```
 
-Precedence within a resolution bucket is `Explicit` > `DataContract` > `ClrConvention`. Conflicts between
-equal-precedence mappings fail fast at build time with `AvroConfigurationException`.
+Within a selected resolution bucket, precedence is:
+
+```text
+Explicit > DataContract > CLR full-name convention
+```
+
+Conflicts between equal-precedence mappings fail fast at build time with `AvroConfigurationException`.
+
+## Attributes
+
+NStalling.Avro can keep type-resolution metadata close to CLR models when that is the most natural place
+for it.
+
+```csharp
+[DataContract(Name = "Customer", Namespace = "Acme.Events")]
+[AvroSchemaVersion("2")]
+public sealed class Customer
+{
+}
+```
+
+For members that need runtime discriminator metadata:
+
+```csharp
+public sealed class ProfileEnvelope
+{
+    [AvroTypeDiscriminator]
+    public string PayloadType { get; init; } = "";
+
+    [AvroVersionDiscriminator]
+    public string? PayloadVersion { get; init; }
+
+    [AvroPolymorphic]
+    public object Payload { get; set; } = null!;
+}
+```
+
+The attributes have distinct roles:
+
+- `DataContract` maps a CLR type to an Avro record name.
+- `[AvroSchemaVersion]` declares which externally supplied schema version(s) a CLR type can represent.
+- `[AvroTypeDiscriminator]` identifies metadata used to locate an opaque payload's writer schema.
+- `[AvroVersionDiscriminator]` supplies runtime schema-version context.
+- `[AvroPolymorphic]` marks or configures a member that needs runtime materialization behavior.
+
+Fluent configuration can be used instead when this metadata belongs in application configuration rather
+than on the model.
 
 ## Schema versions
 
 One CLR type may represent multiple schema versions, and one Avro name may map to different CLR types
-under different supplied versions. Annotate candidate types with `[AvroSchemaVersion]`; supply the runtime
-version at read time.
+under different supplied versions.
 
 ```csharp
 [DataContract(Name = "Customer", Namespace = "Acme.Events")]
 [AvroSchemaVersion("1")]
-public sealed class LegacyCustomer : ICustomer { /* ... */ }
+public sealed class LegacyCustomer : ICustomer
+{
+}
 
 [DataContract(Name = "Customer", Namespace = "Acme.Events")]
 [AvroSchemaVersion("2")]
-public sealed class CurrentCustomer : ICustomer { /* ... */ }
+public sealed class CurrentCustomer : ICustomer
+{
+}
 ```
 
 ```csharp
-var customer = (RecordSchema)Schema.Parse(customerSchemaJson);
-var v1 = serializer.Deserialize(bytes, customer, schemaVersion: "1"); // LegacyCustomer
-var v2 = serializer.Deserialize(bytes, customer, schemaVersion: "2"); // CurrentCustomer
+var customerSchema = (RecordSchema)Schema.Parse(customerSchemaJson);
+
+var v1 = serializer.Deserialize(
+    bytes,
+    customerSchema,
+    schemaVersion: "1"); // LegacyCustomer
+
+var v2 = serializer.Deserialize(
+    bytes,
+    customerSchema,
+    schemaVersion: "2"); // CurrentCustomer
 ```
 
-Resolution is two-stage: the version bucket is selected first (exact version, else the unqualified bucket
-only if no versioned mappings exist — **never a guess**), then source precedence applies. A type that
-declares `[AvroSchemaVersion]` is never placed in the unqualified bucket.
+A single CLR type can also represent several compatible versions:
 
-## Fluent configuration and dependency injection
+```csharp
+[DataContract(Name = "Customer", Namespace = "Acme.Events")]
+[AvroSchemaVersion("2")]
+[AvroSchemaVersion("3")]
+[AvroSchemaVersion("4")]
+public sealed class Customer
+{
+}
+```
 
-`AvroOptions` compiles an immutable `AvroConfiguration` exposing a ready `Resolver` and `Serializer`.
+Resolution is two-stage:
+
+1. Select the version bucket.
+2. Apply mapping precedence within that bucket.
+
+An exact version wins. If version-specific mappings exist for an Avro name, an unknown version does
+**not** silently fall back to an unqualified mapping.
+
+A type that declares `[AvroSchemaVersion]` is never placed in the unqualified bucket.
+
+## Configuration and dependency injection
+
+`AvroOptions` compiles an immutable `AvroConfiguration` exposing a ready resolver and serializer.
 
 ```csharp
 using NStalling.Avro;
 
 var config = new AvroOptions()
-    .Types(t => t.Add<CustomerCreated>().Add<OrderPlaced>())
+    .Types(t => t
+        .Add<CustomerCreated>()
+        .Add<OrderPlaced>())
     .Build();
 
 var result = config.Serializer.Deserialize<Envelope>(bytes, schema);
 ```
 
-With `Microsoft.Extensions.DependencyInjection`, `AddAvro` compiles eagerly (configuration defects surface
-at registration) and registers `AvroConfiguration`, `IAvroTypeResolver`, and `AvroSerializer` as
-singletons.
+With `Microsoft.Extensions.DependencyInjection`, `AddAvro` compiles eagerly so configuration defects
+surface during registration.
 
 ```csharp
 using NStalling.Avro.DependencyInjection;
 
-services.AddAvro(o => o.Types(t => t.Add<CustomerCreated>().Add<OrderPlaced>()));
+services.AddAvro(o =>
+    o.Types(t => t
+        .Add<CustomerCreated>()
+        .Add<OrderPlaced>()));
 ```
 
-## Value-directed (opaque) payloads
+`AddAvro` registers:
 
-When the outer schema carries the payload as opaque `bytes` and cannot identify the inner record, NStalling
-decodes it in a **second pass** directed by discriminator values read from the fully decoded outer object
-(so field order does not matter). You supply the inner writer schema through an
-`IAvroPayloadSchemaSource`; NStalling still resolves the CLR type from the resulting Avro `RecordSchema`.
+- `AvroConfiguration`
+- `IAvroTypeResolver`
+- `AvroSerializer`
 
-Configure discriminators with attributes and supply the schema source in code:
+as singletons.
+
+## Opaque payloads
+
+When an outer Avro record carries an inner payload as opaque `bytes`, NStalling can perform a second
+decode after the outer record has been read.
+
+The application supplies the inner writer schema through `IAvroPayloadSchemaSource`. NStalling then uses
+the resulting Avro schema to resolve the CLR type and lets Apache perform the inner decode.
+
+```text
+outer record
+    ↓
+payload metadata / discriminator
+    ↓
+IAvroPayloadSchemaSource
+    ↓
+inner Avro schema
+    ↓
+CLR type resolution
+    ↓
+Apache second-pass decode
+```
+
+Example:
 
 ```csharp
 public sealed class ProfileEnvelope
 {
-    [AvroTypeDiscriminator]    public string PayloadType { get; init; } = "";
-    [AvroVersionDiscriminator] public string? PayloadVersion { get; init; }
-    [AvroPolymorphic]          public object Payload { get; set; } = null!; // opaque bytes -> concrete type
+    [AvroTypeDiscriminator]
+    public string PayloadType { get; init; } = "";
+
+    [AvroVersionDiscriminator]
+    public string? PayloadVersion { get; init; }
+
+    [AvroPolymorphic]
+    public object Payload { get; set; } = null!;
 }
 
 var config = new AvroOptions()
-    .Types(t => t.Add<LegacyProfile>().Add<CurrentProfile>())
+    .Types(t => t
+        .Add<LegacyProfile>()
+        .Add<CurrentProfile>())
     .Polymorphic<ProfileEnvelope>(p => p
         .Member(e => e.Payload)
-        .PayloadSchema(myPayloadSchemaSource)) // IAvroPayloadSchemaSource
+        .PayloadSchema(myPayloadSchemaSource))
     .Build();
 ```
 
-`IAvroPayloadSchemaSource.TryGetWriterSchema` must distinguish an ordinary not-found (return `false`) from
-an infrastructure failure (throw). Unknown/missing **type** identity is governed by
-`AvroUnrecognizedTypeDiscriminatorHandling`:
+`IAvroPayloadSchemaSource.TryGetWriterSchema` distinguishes an ordinary not-found from an infrastructure
+failure.
+
+Discriminator values are never treated as arbitrary CLR type names. Resolved CLR types remain limited to
+the configured type registry and explicitly scanned assemblies.
+
+Unknown or missing **type identity** is governed by `AvroUnrecognizedTypeDiscriminatorHandling`:
 
 | Value | Behavior |
 |---|---|
 | `Fail` *(default)* | Throw `AvroTypeResolutionException`. |
-| `PreservePayload` | Keep the raw payload when it is assignable to the member. |
-| `UseFallbackType` | Materialize a configured fallback type from the closed allowlist. `UseFallbackType` never fabricates a writer schema. |
+| `PreservePayload` | Keep the raw payload when it is assignable to the target member. |
+| `UseFallbackType` | Use a configured fallback CLR type from the closed allowlist. The writer schema must still be supplied. |
+
+A missing version discriminator is different: it simply means no version qualifier was supplied, so
+normal unqualified version resolution applies.
 
 Payload-schema, CLR-resolution, and inner-decode failures are typed separately and are **never** diverted
-by this policy.
+by the type-discriminator handling policy.
 
 ## Exceptions
 
-All materialization-pipeline failures derive from `AvroSerializationException` and carry relevant
-path/schema/version/discriminator context, preserving the originating exception as `InnerException`:
+Failures inside the Avro materialization pipeline derive from `AvroSerializationException` and carry
+relevant path/schema/version/discriminator context while preserving the originating exception as
+`InnerException`.
 
-- `AvroPayloadSchemaException` — the payload schema source failed (infrastructure).
-- `AvroTypeResolutionException` — no/ambiguous CLR mapping, declared-type incompatibility, or unrecognized
-  identity under `Fail`.
+- `AvroPayloadSchemaException` — the payload schema source failed.
+- `AvroTypeResolutionException` — no or ambiguous CLR mapping, declared-type incompatibility, or
+  unrecognized type identity under `Fail`.
 - `AvroPayloadDecodeException` — the second-pass decode of an isolated payload buffer failed.
 
-Configuration defects use `AvroConfigurationException`. Cancellation and ordinary API argument-validation
-retain normal .NET semantics (they are not wrapped).
+Configuration defects use `AvroConfigurationException`.
+
+Cancellation and ordinary API argument-validation exceptions retain normal .NET semantics and are not
+wrapped.
 
 ## Samples
 
-Runnable samples live under [`samples/`](NStalling.Avro/samples):
+Runnable samples live under [`samples/`](samples):
 
-- **EventEnvelope** — schema-directed polymorphism: an `object` payload over a union of record branches.
-- **Annotations** — attribute-driven configuration: `[AvroTypeDiscriminator]`,
-  `[AvroVersionDiscriminator]`, `[AvroPolymorphic]`, and `[AvroSchemaVersion]`, where a version
-  discriminator selects between two CLR types sharing one Avro name.
+- **EventEnvelope** — resolves an `object` payload backed by an Avro union of record branches.
+- **Annotations** — demonstrates `[AvroTypeDiscriminator]`, `[AvroVersionDiscriminator]`,
+  `[AvroPolymorphic]`, and `[AvroSchemaVersion]`, including version-qualified CLR mappings that share one
+  Avro name.
 
 ```bash
-dotnet run --project NStalling.Avro/samples/EventEnvelope
-dotnet run --project NStalling.Avro/samples/Annotations
+dotnet run --project samples/EventEnvelope
+dotnet run --project samples/Annotations
 ```
 
 ## Build and test
 
 ```bash
-dotnet build NStalling.Avro/NStalling.Avro.sln
-dotnet test  NStalling.Avro/NStalling.Avro.sln
+dotnet build NStalling.Avro.sln
+dotnet test NStalling.Avro.sln
 ```
 
 ## License
