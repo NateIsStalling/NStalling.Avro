@@ -9,7 +9,7 @@ namespace NStalling.Avro
     /// It never manufactures incoming version context for a nested schema.
     /// </summary>
     [AttributeUsage(
-        AttributeTargets.Class | AttributeTargets.Struct,
+        AttributeTargets.Class,
         AllowMultiple = true,
         Inherited = false)]
     public sealed class AvroSchemaVersionAttribute : Attribute
