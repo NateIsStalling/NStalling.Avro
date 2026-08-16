@@ -49,7 +49,7 @@ namespace NStalling.Avro.Serialization
             {
                 return ReadCore(payload, innerWriterSchema, innerWriterSchema, type, schemaVersion);
             }
-            catch (Exception ex) when (ex is not AvroSerializationException and not OperationCanceledException)
+            catch (Exception ex) when (ex is not AvroSerializationException and not AvroConfigurationException and not OperationCanceledException)
             {
                 throw new AvroPayloadDecodeException(
                     $"Failed to decode the isolated payload for '{path ?? type.Name}'.", ex)
