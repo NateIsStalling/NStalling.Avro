@@ -4,7 +4,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NStalling.Avro", "NStalling
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NStalling.Avro.Tests", "NStalling.Avro.Tests\NStalling.Avro.Tests.csproj", "{B11EEBF6-F375-4E83-8CE7-C89FFDCF76CA}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{5D20AA90-6969-D8BD-9DCD-8634F4692FDA}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{5D20AA90-6969-D8BD-9DCD-8634F4692FDA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventEnvelope", "samples\EventEnvelope\EventEnvelope.csproj", "{98FC79DA-12CD-474B-99A4-E4CAD5437790}"
 EndProject
