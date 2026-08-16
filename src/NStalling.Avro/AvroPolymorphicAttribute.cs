@@ -8,7 +8,7 @@ namespace NStalling.Avro
     /// takes precedence over marker-attribute discovery.
     /// </summary>
     [AttributeUsage(
-        AttributeTargets.Property | AttributeTargets.Field,
+        AttributeTargets.Property,
         AllowMultiple = false,
         Inherited = true)]
     public sealed class AvroPolymorphicAttribute : Attribute

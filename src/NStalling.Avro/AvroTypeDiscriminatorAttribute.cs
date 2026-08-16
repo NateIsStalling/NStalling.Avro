@@ -8,7 +8,7 @@ namespace NStalling.Avro
     /// it never directly names or loads a CLR type.
     /// </summary>
     [AttributeUsage(
-        AttributeTargets.Property | AttributeTargets.Field,
+        AttributeTargets.Property,
         AllowMultiple = false,
         Inherited = true)]
     public sealed class AvroTypeDiscriminatorAttribute : Attribute

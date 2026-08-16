@@ -49,6 +49,21 @@ namespace NStalling.Avro.Tests.Fixtures
             => throw new System.InvalidOperationException("registry unavailable");
     }
 
+    // Reader-side opaque envelope configured entirely through property-level marker attributes. Exercises
+    // attribute-driven discriminator/payload discovery end-to-end; fields are intentionally not used because
+    // Apache's reflect reader binds record fields only to CLR properties.
+    public sealed class AnnotatedOpaqueEnvelope
+    {
+        [AvroTypeDiscriminator]
+        public string EventType { get; set; } = "";
+
+        [AvroVersionDiscriminator]
+        public string? SchemaVersion { get; set; }
+
+        [AvroPolymorphic]
+        public object Payload { get; set; } = null!;
+    }
+
     // Reader-side envelope carrying a nested header, used to verify that expression-based member and
     // discriminator selectors reject nested/unrelated property expressions.
     [DataContract(Name = "NestedEnvelope", Namespace = "Acme.Events")]

@@ -7,7 +7,7 @@ namespace NStalling.Avro
     /// identity remains schema-directed. It never selects a CLR type by itself.
     /// </summary>
     [AttributeUsage(
-        AttributeTargets.Property | AttributeTargets.Field,
+        AttributeTargets.Property,
         AllowMultiple = false,
         Inherited = true)]
     public sealed class AvroVersionDiscriminatorAttribute : Attribute
