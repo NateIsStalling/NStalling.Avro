@@ -124,5 +124,37 @@ namespace NStalling.Avro.Tests.Serialization
                     .FallbackTo<OrderPlaced>())
                 .Build());
         }
+
+        [Fact]
+        public void InterfaceDeclaredOpaqueMember_FailsConfiguration()
+        {
+            var source = new MapPayloadSchemaSource(new Dictionary<string, Schema>());
+
+            // A byte[] payload cannot be held by an interface-typed member during the first pass, so the
+            // declaration must be rejected at build time rather than failing deep inside Apache.
+            var ex = Assert.Throws<AvroConfigurationException>(() => new AvroOptions()
+                .Types(t => t.Add<CustomerCreated>())
+                .Polymorphic<EnvelopeInterface>(p => p.Member(e => e.Payload)
+                    .DiscriminateBy(e => e.EventId)
+                    .PayloadSchema(source))
+                .Build());
+
+            Assert.Contains("EnvelopeInterface.Payload", ex.Message);
+        }
+
+        [Fact]
+        public void AbstractBaseDeclaredOpaqueMember_FailsConfiguration()
+        {
+            var source = new MapPayloadSchemaSource(new Dictionary<string, Schema>());
+
+            var ex = Assert.Throws<AvroConfigurationException>(() => new AvroOptions()
+                .Types(t => t.Add<CustomerCreated>())
+                .Polymorphic<EnvelopeAbstract>(p => p.Member(e => e.Payload)
+                    .DiscriminateBy(e => e.EventId)
+                    .PayloadSchema(source))
+                .Build());
+
+            Assert.Contains("EnvelopeAbstract.Payload", ex.Message);
+        }
     }
 }

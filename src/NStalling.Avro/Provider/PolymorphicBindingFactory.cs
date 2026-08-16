@@ -79,6 +79,7 @@ namespace NStalling.Avro.Provider
                 var typeLocator = typePath is null ? null : DiscriminatorLocator.Create(type, typePath);
                 var versionLocator = versionPath is null ? null : DiscriminatorLocator.Create(type, versionPath);
 
+                ValidateOpaqueMemberType(type, member);
                 ValidateHandling(type, member, handling, fallback, resolver);
 
                 bindings.Add(new PolymorphicMemberBinding(
@@ -115,6 +116,23 @@ namespace NStalling.Avro.Provider
                 : defaults.DefaultHandling;
         }
 
+        private static void ValidateOpaqueMemberType(Type type, PropertyInfo member)
+        {
+            // Every polymorphic member is decoded value-directed: Apache's first pass materializes the
+            // payload as an opaque byte[], which the second pass replaces with the resolved concrete value.
+            // The declared member type must therefore be able to hold a raw byte[] (e.g. `object` or
+            // `byte[]`). Interface/abstract-base declarations that a byte[] is not assignable to fail deep
+            // inside Apache before the value-directed engine runs, so reject them here with a clear error.
+            if (!member.PropertyType.IsAssignableFrom(typeof(byte[])))
+            {
+                throw new AvroConfigurationException(
+                    $"Polymorphic member '{type.Name}.{member.Name}' is declared as " +
+                    $"'{member.PropertyType.FullName}', but value-directed decoding first materializes the " +
+                    "payload as an opaque byte[] before its concrete type is resolved. Declare the member " +
+                    "as 'object' (or 'byte[]') so the raw payload can be held during the first pass.");
+            }
+        }
+
         private static void ValidateHandling(
             Type type,
             PropertyInfo member,
@@ -124,16 +142,6 @@ namespace NStalling.Avro.Provider
         {
             switch (handling)
             {
-                case AvroUnrecognizedTypeDiscriminatorHandling.PreservePayload:
-                    if (!member.PropertyType.IsAssignableFrom(typeof(byte[])))
-                    {
-                        throw new AvroConfigurationException(
-                            $"PreservePayload is invalid for '{type.Name}.{member.Name}': a raw byte[] payload is " +
-                            $"not assignable to the declared member type '{member.PropertyType.FullName}'.");
-                    }
-
-                    break;
-
                 case AvroUnrecognizedTypeDiscriminatorHandling.UseFallbackType:
                     if (fallback is null)
                     {

@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
 using Avro;
@@ -29,19 +30,66 @@ namespace NStalling.Avro.Provider
 
         private readonly IAvroTypeResolver _resolver;
 
+        private static readonly ConcurrentDictionary<Type, byte> RegisteredOpaqueConverterTypes = new();
+
         static ApacheReflectionAdapter()
         {
-            // Apache's reflect reader rejects an `object`-typed member over an Avro `bytes` field. Register
-            // a process-wide passthrough converter so opaque payload members declared as `object` decode to
-            // a raw byte[] in the first pass; the value-directed engine performs the second-pass decode.
-            ClassCache.AddDefaultConverter<byte[], object>(
-                (bytes, _) => bytes,
-                (value, _) => (byte[])value);
+            // Apache's reflect reader rejects a member typed as anything other than byte[] over an Avro
+            // `bytes` field. Register a process-wide passthrough converter so opaque payload members declared
+            // as `object` decode to a raw byte[] in the first pass; the value-directed engine performs the
+            // second-pass decode. Additional declared member types are registered per configuration via
+            // EnsureOpaquePayloadConverters.
+            EnsureOpaquePayloadConverter(typeof(object));
         }
 
         public ApacheReflectionAdapter(IAvroTypeResolver resolver)
         {
             _resolver = resolver ?? throw new ArgumentNullException(nameof(resolver));
+        }
+
+        /// <summary>
+        /// Registers process-wide passthrough converters that let Apache's reflect reader decode an Avro
+        /// `bytes` field into an opaque payload member declared as one of the supplied types, holding the
+        /// raw byte[] until the value-directed engine resolves the concrete type. Types that a byte[] cannot
+        /// be assigned to (interfaces/abstract bases not implemented by byte[]) are skipped here; such
+        /// declarations are rejected at configuration build time.
+        /// </summary>
+        internal static void EnsureOpaquePayloadConverters(IEnumerable<Type> declaredMemberTypes)
+        {
+            if (declaredMemberTypes is null)
+            {
+                throw new ArgumentNullException(nameof(declaredMemberTypes));
+            }
+
+            foreach (var type in declaredMemberTypes)
+            {
+                EnsureOpaquePayloadConverter(type);
+            }
+        }
+
+        private static void EnsureOpaquePayloadConverter(Type declaredType)
+        {
+            if (declaredType is null)
+            {
+                return;
+            }
+
+            // A member typed exactly as byte[] is decoded directly by Apache; no converter is required.
+            if (declaredType == typeof(byte[]))
+            {
+                return;
+            }
+
+            // Only a declared type that a raw byte[] is assignable to can hold the first-pass payload.
+            if (!declaredType.IsAssignableFrom(typeof(byte[])))
+            {
+                return;
+            }
+
+            if (RegisteredOpaqueConverterTypes.TryAdd(declaredType, 0))
+            {
+                ClassCache.AddDefaultConverter(new OpaquePayloadPassthroughConverter(declaredType));
+            }
         }
 
         /// <summary>
@@ -196,6 +244,30 @@ namespace NStalling.Avro.Provider
             }
 
             return mapType.GenericTypeArguments[1];
+        }
+
+        /// <summary>
+        /// Passthrough converter that maps an Avro `bytes` field to/from a raw byte[] while advertising an
+        /// arbitrary CLR property type. Apache matches default converters by exact property type, so one
+        /// instance is registered per opaque payload member declared type (e.g. <see cref="object"/>). The
+        /// value-directed engine performs the real second-pass decode from the preserved byte[].
+        /// </summary>
+        private sealed class OpaquePayloadPassthroughConverter : IAvroFieldConverter
+        {
+            private readonly Type _propertyType;
+
+            public OpaquePayloadPassthroughConverter(Type propertyType)
+            {
+                _propertyType = propertyType;
+            }
+
+            public Type GetAvroType() => typeof(byte[]);
+
+            public Type GetPropertyType() => _propertyType;
+
+            public object FromAvroType(object o, Schema s) => o;
+
+            public object ToAvroType(object o, Schema s) => o;
         }
     }
 }

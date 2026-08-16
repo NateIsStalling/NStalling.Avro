@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using NStalling.Avro.Provider;
 using NStalling.Avro.Serialization;
 
@@ -31,6 +33,15 @@ namespace NStalling.Avro
 
             var resolver = options.Registry.BuildResolver();
             var bindings = PolymorphicBindingFactory.BuildAll(options, resolver);
+
+            // Register process-wide passthrough converters for every configured opaque payload member type
+            // so Apache's first-pass reflect reader can decode the `bytes` field into the declared member.
+            var declaredMemberTypes = bindings.Values
+                .SelectMany(memberBindings => memberBindings)
+                .Select(binding => binding.DeclaredMemberType)
+                .Distinct();
+            ApacheReflectionAdapter.EnsureOpaquePayloadConverters(declaredMemberTypes);
+
             var provider = new PolymorphicBindingRegistry(bindings);
             var serializer = new AvroSerializer(resolver, provider);
             return new AvroConfiguration(resolver, serializer);
