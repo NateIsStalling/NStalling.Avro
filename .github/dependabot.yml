@@ -4,6 +4,14 @@ updates:
     directory: "/src"
     schedule:
       interval: "weekly"
+    ignore:
+      # This is the floor for a published library's dependency, deliberately pinned low so it
+      # doesn't force every consumer onto a newer Microsoft.Extensions.DependencyInjection than
+      # they need. Patch releases within 3.1.x are still allowed; major/minor bumps are not.
+      - dependency-name: "Microsoft.Extensions.DependencyInjection.Abstractions"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
 
   - package-ecosystem: "github-actions"
     directory: "/"
