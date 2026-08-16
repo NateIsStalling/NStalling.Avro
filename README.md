@@ -1,5 +1,8 @@
 # NStalling.Avro
 
+![NuGet Version](https://img.shields.io/nuget/vpre/NStalling.Avro)
+
+
 A thin extension over [Apache.Avro](https://www.nuget.org/packages/Apache.Avro) that adds **runtime CLR
 type resolution** to reflection-based Avro deserialization.
 
@@ -26,9 +29,15 @@ generate schemas, implement a codec, add a schema registry client, or replace Ap
 
 ## Install
 
-> **NuGet package coming soon.**
+```bash
+dotnet add package NStalling.Avro
+```
 
-For now, reference the project directly from source.
+For `Microsoft.Extensions.DependencyInjection` integration (`AddAvro`), also add:
+
+```bash
+dotnet add package NStalling.Avro.DependencyInjection
+```
 
 ## Quick start
 
