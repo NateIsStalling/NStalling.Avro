@@ -48,4 +48,21 @@ namespace NStalling.Avro.Tests.Fixtures
         public bool TryGetWriterSchema(AvroPayloadSchemaContext context, [NotNullWhen(true)] out Schema? schema)
             => throw new System.InvalidOperationException("registry unavailable");
     }
+
+    // Reader-side envelope carrying a nested header, used to verify that expression-based member and
+    // discriminator selectors reject nested/unrelated property expressions.
+    [DataContract(Name = "NestedEnvelope", Namespace = "Acme.Events")]
+    public sealed class NestedEnvelope
+    {
+        public EnvelopeHeader Header { get; set; } = new();
+
+        public object Payload { get; set; } = null!;
+    }
+
+    public sealed class EnvelopeHeader
+    {
+        public string EventType { get; set; } = "";
+
+        public object Payload { get; set; } = null!;
+    }
 }

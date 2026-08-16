@@ -36,12 +36,14 @@ namespace NStalling.Avro
                 body = innerMember;
             }
 
-            if (body is MemberExpression { Member: PropertyInfo property })
+            if (body is MemberExpression { Member: PropertyInfo property, Expression: ParameterExpression })
             {
                 return property;
             }
 
-            throw new AvroConfigurationException("A polymorphic member selector must reference a property.");
+            throw new AvroConfigurationException(
+                "A polymorphic member selector must reference a direct property of the selected type " +
+                "(e.g. x => x.Payload); nested or unrelated property expressions are not supported.");
         }
     }
 
@@ -125,12 +127,14 @@ namespace NStalling.Avro
                 body = innerMember;
             }
 
-            if (body is MemberExpression { Member: PropertyInfo property })
+            if (body is MemberExpression { Member: PropertyInfo property, Expression: ParameterExpression })
             {
                 return property.Name;
             }
 
-            throw new AvroConfigurationException("A discriminator selector must reference a property.");
+            throw new AvroConfigurationException(
+                "A discriminator selector must reference a direct property of the selected type " +
+                "(e.g. x => x.EventType); use the string path overload for nested discriminators.");
         }
     }
 }
