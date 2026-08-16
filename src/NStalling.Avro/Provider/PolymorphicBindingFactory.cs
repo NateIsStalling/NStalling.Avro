@@ -79,6 +79,12 @@ namespace NStalling.Avro.Provider
                 var typeLocator = typePath is null ? null : DiscriminatorLocator.Create(type, typePath);
                 var versionLocator = versionPath is null ? null : DiscriminatorLocator.Create(type, versionPath);
 
+                if (!member.CanRead || !member.CanWrite || member.GetIndexParameters().Length != 0)
+                {
+                    throw new AvroConfigurationException(
+                        $"Polymorphic member '{type.Name}.{member.Name}' must be a readable, writable, non-indexed property.");
+                }
+
                 ValidateHandling(type, member, handling, fallback, resolver);
 
                 bindings.Add(new PolymorphicMemberBinding(
