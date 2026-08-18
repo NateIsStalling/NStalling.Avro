@@ -336,10 +336,18 @@ Runnable samples live under [`NStalling.Avro.Samples`](src/NStalling.Avro.Sample
 - **Annotations** — demonstrates `[AvroTypeDiscriminator]`, `[AvroVersionDiscriminator]`,
   `[AvroPolymorphic]`, and `[AvroSchemaVersion]`, including version-qualified CLR mappings that share one
   Avro name.
+- **DependencyInjection** — the same union scenario as EventEnvelope, but configured through
+  `IServiceCollection.AddAvro` and resolved from a built `ServiceProvider` instead of building an
+  `AvroConfiguration` directly.
+- **TypeResolver** — exercises `IAvroTypeResolver.Resolve`/`TryResolve`/`ResolveOrDefault` directly
+  (outside `AvroSerializer.Deserialize`): version-qualified resolution, declared-type incompatibility, and
+  absence vs. ambiguity handling.
 
 ```bash
 dotnet run --project NStalling.Avro.Samples/EventEnvelope
 dotnet run --project NStalling.Avro.Samples/Annotations
+dotnet run --project NStalling.Avro.Samples/DependencyInjection
+dotnet run --project NStalling.Avro.Samples/TypeResolver
 ```
 
 ## Build and test
