@@ -31,7 +31,7 @@ Apache.Avro which CLR type should represent that record.
 
 Runtime type resolution is also needed when:
 
-- a member is declared as an interface or abstract base type;
+- a member is declared as `object`, an interface, or an abstract base type;
 - an Avro union contains multiple record branches;
 - multiple CLR types share an Avro name and are distinguished by schema version; or
 - an outer record carries an Avro payload as opaque `bytes`, with its writer schema supplied separately.
