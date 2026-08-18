@@ -16,4 +16,8 @@
         <ProjectReference Include="..\..\NStalling.Avro\NStalling.Avro.csproj"/>
     </ItemGroup>
 
+    <ItemGroup>
+        <InternalsVisibleTo Include="NStalling.Avro.Tests"/>
+    </ItemGroup>
+
 </Project>

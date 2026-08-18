@@ -15,6 +15,20 @@ union record branches, and version-qualified records that share one Avro name.
 
 ## Why
 
+The Avro schema may identify exactly which record is being read while the corresponding CLR member does
+not identify the concrete application type to materialize:
+
+```csharp
+public sealed class Envelope
+{
+    public string EventId { get; init; } = "";
+    public object Payload { get; init; } = null!;
+}
+```
+
+The schema might identify `Payload` as `Acme.Events.CustomerCreated`, but `object` does not tell
+Apache.Avro which CLR type should represent that record.
+
 Apache's reflection machinery ultimately associates an Avro record schema with a concrete CLR type. That
 becomes limiting when:
 
@@ -75,6 +89,12 @@ switch (envelope.Payload)
 public sealed class CustomerCreated
 {
     public string CustomerId { get; init; } = "";
+}
+
+[DataContract(Name = "OrderPlaced", Namespace = "Acme.Events")]
+public sealed class OrderPlaced
+{
+    public string OrderId { get; init; } = "";
 }
 
 public sealed class Envelope

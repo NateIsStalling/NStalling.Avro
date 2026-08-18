@@ -44,6 +44,16 @@ internal static class Program
 
     private static void Main()
     {
+        foreach (var line in Run())
+        {
+            Console.WriteLine(line);
+        }
+    }
+
+    // Extracted from Main so NStalling.Avro.Tests can assert on this sample's behavior without
+    // capturing console output.
+    internal static IReadOnlyList<string> Run()
+    {
         var schema = (RecordSchema)Schema.Parse(EnvelopeSchemaJson);
 
         // AddAvro compiles the AvroOptions eagerly, so a bad mapping fails here at registration
@@ -62,11 +72,14 @@ internal static class Program
 
         // Deserialize with the DI-resolved serializer; the object payload materializes as the concrete
         // record type.
+        var lines = new List<string>();
         foreach (var bytes in new[] { first, second })
         {
             var envelope = serializer.Deserialize<Envelope>(bytes, schema);
-            Console.WriteLine($"EventId={envelope.EventId} -> {Describe(envelope.Payload)}");
+            lines.Add($"EventId={envelope.EventId} -> {Describe(envelope.Payload)}");
         }
+
+        return lines;
     }
 
     private static string Describe(object payload) => payload switch

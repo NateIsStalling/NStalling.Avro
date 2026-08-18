@@ -69,6 +69,16 @@ internal static class Program
 
     private static void Main()
     {
+        foreach (var line in Run())
+        {
+            Console.WriteLine(line);
+        }
+    }
+
+    // Extracted from Main so NStalling.Avro.Tests can assert on this sample's behavior without
+    // capturing console output.
+    internal static IReadOnlyList<string> Run()
+    {
         var profileSchema = (RecordSchema)Schema.Parse(ProfileSchemaJson);
         var envelopeSchema = (RecordSchema)Schema.Parse(EnvelopeSchemaJson);
 
@@ -88,12 +98,15 @@ internal static class Program
         var v2 = WriteEnvelope(envelopeSchema,
             new EnvelopeWire { EventId = "evt-2", PayloadType = "Profile", PayloadVersion = "2", Payload = innerBytes });
 
+        var lines = new List<string>();
         foreach (var bytes in new[] { v1, v2 })
         {
             var envelope = config.Serializer.Deserialize<ProfileEnvelope>(bytes, envelopeSchema);
             var profile = (IProfile)envelope.Payload;
-            Console.WriteLine($"{envelope.EventId} version={envelope.PayloadVersion} -> {profile.Describe()}");
+            lines.Add($"{envelope.EventId} version={envelope.PayloadVersion} -> {profile.Describe()}");
         }
+
+        return lines;
     }
 
     // Supplies the inner writer schema for the opaque payload. It maps a discriminator to an Avro schema

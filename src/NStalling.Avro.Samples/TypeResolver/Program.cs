@@ -42,6 +42,16 @@ internal static class Program
 
     private static void Main()
     {
+        foreach (var line in Run())
+        {
+            Console.WriteLine(line);
+        }
+    }
+
+    // Extracted from Main so NStalling.Avro.Tests can assert on this sample's behavior without
+    // capturing console output.
+    internal static IReadOnlyList<string> Run()
+    {
         var profileSchema = (RecordSchema)Schema.Parse(ProfileSchemaJson);
         var addressSchema = (RecordSchema)Schema.Parse(AddressSchemaJson);
         var unknownSchema = (RecordSchema)Schema.Parse(UnknownSchemaJson);
@@ -51,10 +61,12 @@ internal static class Program
             .Build();
         var resolver = config.Resolver;
 
+        var lines = new List<string>();
+
         // Exact (fullName, version) match: two CLR types share the Avro name "Profile", selected by
         // the externally supplied version.
-        Console.WriteLine($"Resolve(Profile, v1) -> {resolver.Resolve(profileSchema, typeof(IProfile), "1").Name}");
-        Console.WriteLine($"Resolve(Profile, v2) -> {resolver.Resolve(profileSchema, typeof(IProfile), "2").Name}");
+        lines.Add($"Resolve(Profile, v1) -> {resolver.Resolve(profileSchema, typeof(IProfile), "1").Name}");
+        lines.Add($"Resolve(Profile, v2) -> {resolver.Resolve(profileSchema, typeof(IProfile), "2").Name}");
 
         // Declared-type incompatibility: Address is registered, but isn't assignable to IProfile.
         try
@@ -63,21 +75,23 @@ internal static class Program
         }
         catch (AvroTypeResolutionException ex)
         {
-            Console.WriteLine($"Resolve(Address, declaredType=IProfile) threw: {ex.Message}");
+            lines.Add($"Resolve(Address, declaredType=IProfile) threw: {ex.Message}");
         }
 
         // Versioned mappings exist for "Profile", but not for version "3" -- resolution fails rather
         // than silently falling back to an unqualified or differently versioned mapping.
         var missingVersion = resolver.TryResolve(profileSchema, null, "3", out _);
-        Console.WriteLine($"TryResolve(Profile, v3) -> {missingVersion}");
+        lines.Add($"TryResolve(Profile, v3) -> {missingVersion}");
 
         // No mapping at all for "Unknown": TryResolve reports absence instead of throwing.
         var found = resolver.TryResolve(unknownSchema, null, null, out var unknownType);
-        Console.WriteLine($"TryResolve(Unknown) -> {found}, type={unknownType?.Name ?? "null"}");
+        lines.Add($"TryResolve(Unknown) -> {found}, type={unknownType?.Name ?? "null"}");
 
         // ResolveOrDefault mirrors TryResolve for absence, but still throws on ambiguity or a declared-
         // type conflict -- absence is optional, contradiction is not.
         var defaulted = resolver.ResolveOrDefault(unknownSchema);
-        Console.WriteLine($"ResolveOrDefault(Unknown) -> {defaulted?.Name ?? "null"}");
+        lines.Add($"ResolveOrDefault(Unknown) -> {defaulted?.Name ?? "null"}");
+
+        return lines;
     }
 }

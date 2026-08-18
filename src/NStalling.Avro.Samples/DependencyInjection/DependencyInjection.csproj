@@ -18,4 +18,8 @@
         <ProjectReference Include="..\..\NStalling.Avro.DependencyInjection\NStalling.Avro.DependencyInjection.csproj"/>
     </ItemGroup>
 
+    <ItemGroup>
+        <InternalsVisibleTo Include="NStalling.Avro.Tests"/>
+    </ItemGroup>
+
 </Project>

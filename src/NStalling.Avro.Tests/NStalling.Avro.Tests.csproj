@@ -19,6 +19,10 @@
     <ItemGroup>
         <ProjectReference Include="..\NStalling.Avro.DependencyInjection\NStalling.Avro.DependencyInjection.csproj" />
         <ProjectReference Include="..\NStalling.Avro\NStalling.Avro.csproj"/>
+        <ProjectReference Include="..\NStalling.Avro.Samples\EventEnvelope\EventEnvelope.csproj"/>
+        <ProjectReference Include="..\NStalling.Avro.Samples\Annotations\Annotations.csproj"/>
+        <ProjectReference Include="..\NStalling.Avro.Samples\DependencyInjection\DependencyInjection.csproj"/>
+        <ProjectReference Include="..\NStalling.Avro.Samples\TypeResolver\TypeResolver.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
