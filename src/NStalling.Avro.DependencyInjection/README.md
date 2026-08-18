@@ -1,5 +1,7 @@
 # NStalling.Avro.DependencyInjection
 
+![NuGet Version](https://img.shields.io/nuget/vpre/NStalling.Avro.DependencyInjection)
+
 `Microsoft.Extensions.DependencyInjection` integration for
 [NStalling.Avro](https://www.nuget.org/packages/NStalling.Avro).
 
