@@ -9,7 +9,6 @@
 
     <PropertyGroup>
         <PackageId>NStalling.Avro.DependencyInjection</PackageId>
-        <Version>0.1.1</Version>
         <Description>Microsoft.Extensions.DependencyInjection integration for NStalling.Avro.</Description>
         <PackageTags>avro;apache-avro;dependency-injection</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -24,7 +23,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+      <None Include="README.md" Pack="true" PackagePath="\" />
     </ItemGroup>
 
 </Project>
