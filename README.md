@@ -15,6 +15,20 @@ union record branches, and version-qualified records that share one Avro name.
 
 ## Why
 
+The Avro schema may identify exactly which record is being read while the corresponding CLR member does
+not identify the concrete application type to materialize:
+
+```csharp
+public sealed class Envelope
+{
+    public string EventId { get; init; } = "";
+    public object Payload { get; init; } = null!;
+}
+```
+
+The schema might identify `Payload` as `Acme.Events.CustomerCreated`, but `object` does not tell
+Apache.Avro which CLR type should represent that record.
+
 Apache's reflection machinery ultimately associates an Avro record schema with a concrete CLR type. That
 becomes limiting when:
 
@@ -75,6 +89,12 @@ switch (envelope.Payload)
 public sealed class CustomerCreated
 {
     public string CustomerId { get; init; } = "";
+}
+
+[DataContract(Name = "OrderPlaced", Namespace = "Acme.Events")]
+public sealed class OrderPlaced
+{
+    public string OrderId { get; init; } = "";
 }
 
 public sealed class Envelope
@@ -336,10 +356,18 @@ Runnable samples live under [`NStalling.Avro.Samples`](src/NStalling.Avro.Sample
 - **Annotations** — demonstrates `[AvroTypeDiscriminator]`, `[AvroVersionDiscriminator]`,
   `[AvroPolymorphic]`, and `[AvroSchemaVersion]`, including version-qualified CLR mappings that share one
   Avro name.
+- **DependencyInjection** — the same union scenario as EventEnvelope, but configured through
+  `IServiceCollection.AddAvro` and resolved from a built `ServiceProvider` instead of building an
+  `AvroConfiguration` directly.
+- **TypeResolver** — exercises `IAvroTypeResolver.Resolve`/`TryResolve`/`ResolveOrDefault` directly
+  (outside `AvroSerializer.Deserialize`): version-qualified resolution, declared-type incompatibility, and
+  absence vs. ambiguity handling.
 
 ```bash
 dotnet run --project NStalling.Avro.Samples/EventEnvelope
 dotnet run --project NStalling.Avro.Samples/Annotations
+dotnet run --project NStalling.Avro.Samples/DependencyInjection
+dotnet run --project NStalling.Avro.Samples/TypeResolver
 ```
 
 ## Build and test

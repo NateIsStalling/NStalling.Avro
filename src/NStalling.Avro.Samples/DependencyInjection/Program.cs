@@ -2,12 +2,15 @@ using System.Runtime.Serialization;
 using Avro;
 using Avro.IO;
 using Avro.Reflect;
+using Microsoft.Extensions.DependencyInjection;
 using NStalling.Avro;
+using NStalling.Avro.DependencyInjection;
+using NStalling.Avro.Serialization;
 
-namespace EventEnvelope;
+namespace DependencyInjection;
 
-// The application envelope. Payload is declared as `object`; NStalling.Avro materializes the concrete
-// record type behind it during deserialization. No envelope-specific library API is involved.
+// Same envelope/union scenario as the EventEnvelope sample, but configured through
+// IServiceCollection.AddAvro instead of building an AvroConfiguration directly.
 public sealed class Envelope
 {
     public string EventId { get; init; } = "";
@@ -29,7 +32,6 @@ public sealed class OrderPlaced
 
 internal static class Program
 {
-    // Envelope schema whose Payload is a union of two named payload records.
     private const string EnvelopeSchemaJson = @"{
       ""type"":""record"",""name"":""Envelope"",""namespace"":""Acme.Events"",
       ""fields"":[
@@ -54,10 +56,13 @@ internal static class Program
     {
         var schema = (RecordSchema)Schema.Parse(EnvelopeSchemaJson);
 
-        // Configure NStalling.Avro: map the payload records so union branches resolve to concrete CLR types.
-        var config = new AvroOptions()
-            .Types(t => t.Add<CustomerCreated>().Add<OrderPlaced>())
-            .Build();
+        // AddAvro compiles the AvroOptions eagerly, so a bad mapping fails here at registration
+        // rather than surfacing later on first read.
+        var services = new ServiceCollection();
+        services.AddAvro(t => t.Types(m => m.Add<CustomerCreated>().Add<OrderPlaced>()));
+
+        using var provider = services.BuildServiceProvider();
+        var serializer = provider.GetRequiredService<AvroSerializer>();
 
         // Produce wire bytes for two different payloads using Apache's reflect writer.
         var first = WriteEnvelope(schema,
@@ -65,11 +70,12 @@ internal static class Program
         var second = WriteEnvelope(schema,
             new Envelope { EventId = "evt-2", Payload = new OrderPlaced { OrderId = "ord-99" } });
 
-        // Deserialize with NStalling.Avro; the object payload materializes as the concrete record type.
+        // Deserialize with the DI-resolved serializer; the object payload materializes as the concrete
+        // record type.
         var lines = new List<string>();
         foreach (var bytes in new[] { first, second })
         {
-            var envelope = config.Serializer.Deserialize<Envelope>(bytes, schema);
+            var envelope = serializer.Deserialize<Envelope>(bytes, schema);
             lines.Add($"EventId={envelope.EventId} -> {Describe(envelope.Payload)}");
         }
 

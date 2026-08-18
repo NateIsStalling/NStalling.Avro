@@ -30,9 +30,16 @@ jobs:
         run: dotnet build src/NStalling.Avro.sln --no-restore --configuration Release
 
       - name: Test
+        env:
+          # NStalling.Avro.PropertyTests runs as part of this solution-wide test pass, so it's already
+          # gated and its coverage already lands in ./coverage alongside the example-based suite. Each
+          # property is cheap (in-memory resolver logic, no I/O), so raise CsCheck's default iteration
+          # count for deeper search on every run; failures print a reproducible seed, so there's nothing
+          # to configure for retries.
+          CsCheck_Iter: 10000
         run: >
           dotnet test src/NStalling.Avro.sln --no-build --configuration Release
-          --logger "trx;LogFileName=test-results.trx"
+          --logger "trx"
           --collect:"XPlat Code Coverage"
           --results-directory ./coverage
 
@@ -41,7 +48,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: test-results
-          path: '**/test-results.trx'
+          path: '**/*.trx'
 
       - name: Generate coverage summary
         if: always()

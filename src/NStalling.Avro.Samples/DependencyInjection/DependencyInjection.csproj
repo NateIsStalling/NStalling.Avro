@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
@@ -10,10 +10,12 @@
 
     <ItemGroup>
         <PackageReference Include="Apache.Avro" Version="1.12.1"/>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11"/>
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\..\NStalling.Avro\NStalling.Avro.csproj"/>
+        <ProjectReference Include="..\..\NStalling.Avro.DependencyInjection\NStalling.Avro.DependencyInjection.csproj"/>
     </ItemGroup>
 
     <ItemGroup>

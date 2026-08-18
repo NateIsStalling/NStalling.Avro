@@ -34,6 +34,8 @@ jobs:
         run: dotnet build src/NStalling.Avro.sln --no-restore --configuration Release -p:Version=${{ steps.version.outputs.version }}
 
       - name: Test
+        env:
+          CsCheck_Iter: 10000
         run: dotnet test src/NStalling.Avro.sln --no-build --configuration Release
 
       - name: Pack

@@ -26,11 +26,14 @@ dotnet test src/NStalling.Avro.sln --filter "FullyQualifiedName~AvroTypeResolver
 # Run samples
 dotnet run --project src/NStalling.Avro.Samples/EventEnvelope
 dotnet run --project src/NStalling.Avro.Samples/Annotations
+dotnet run --project src/NStalling.Avro.Samples/DependencyInjection
+dotnet run --project src/NStalling.Avro.Samples/TypeResolver
 ```
 
 Solution layout: `NStalling.Avro` (core library, `netstandard2.1`), `NStalling.Avro.DependencyInjection`
 (the `AddAvro` extension for `Microsoft.Extensions.DependencyInjection`), `NStalling.Avro.Tests` (xUnit,
-`net10.0`), `NStalling.Avro.Samples/{EventEnvelope,Annotations}` (runnable samples, `net10.0`). Tests
+`net10.0`), `NStalling.Avro.Samples/{EventEnvelope,Annotations,DependencyInjection,TypeResolver}` (runnable samples,
+`net10.0`). Tests
 reference the library via `InternalsVisibleTo`, so tests routinely exercise `internal` types directly
 (resolver, `AvroTypeIndex`, adapters) rather than only the public surface.
 
