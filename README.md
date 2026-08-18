@@ -2,13 +2,11 @@
 
 ![NuGet Version](https://img.shields.io/nuget/vpre/NStalling.Avro)
 
-
 A thin extension over [Apache.Avro](https://www.nuget.org/packages/Apache.Avro) that adds **runtime CLR
 type resolution** to reflection-based Avro deserialization.
 
-Apache.Avro understands Avro and performs the decoding. NStalling.Avro supplies the application CLR type
-to materialize for a given Avro record schema — including `object`, interface, and abstract members,
-union record branches, and version-qualified records that share one Avro name.
+Apache.Avro understands the Avro schema and performs the decoding. NStalling.Avro determines the CLR type
+to materialize from the Avro record schema.
 
 - **Targets:** `netstandard2.1`
 - **Depends on:** `Apache.Avro` 1.12.1
@@ -16,7 +14,9 @@ union record branches, and version-qualified records that share one Avro name.
 ## Why
 
 The Avro schema may identify exactly which record is being read while the corresponding CLR member does
-not identify the concrete application type to materialize:
+not identify the concrete application type to materialize.
+
+For example:
 
 ```csharp
 public sealed class Envelope
@@ -29,14 +29,12 @@ public sealed class Envelope
 The schema might identify `Payload` as `Acme.Events.CustomerCreated`, but `object` does not tell
 Apache.Avro which CLR type should represent that record.
 
-Apache's reflection machinery ultimately associates an Avro record schema with a concrete CLR type. That
-becomes limiting when:
+Runtime type resolution is also needed when:
 
-- a member is declared as `object`, an interface, or an abstract base;
-- a union has multiple record branches;
-- the same Avro full name must map to **different** CLR types depending on an externally supplied schema
-  version; or
-- an outer record carries an inner payload as opaque `bytes`, with its writer schema supplied separately.
+- a member is declared as `object`, an interface, or an abstract base type;
+- an Avro union contains multiple record branches;
+- multiple CLR types share an Avro name and are distinguished by schema version; or
+- an outer record carries an Avro payload as opaque `bytes`, with its writer schema supplied separately.
 
 NStalling.Avro stays focused on CLR materialization around Apache's reflection reader. It does **not**
 generate schemas, implement a codec, add a schema registry client, or replace Apache's Avro behavior.
@@ -55,36 +53,14 @@ dotnet add package NStalling.Avro.DependencyInjection
 
 ## Quick start
 
-Register the CLR types behind your Avro records, build a resolver, and deserialize. When a record is
-encountered through an `object`, interface, abstract member, or Avro union branch, NStalling resolves the
-concrete CLR type for Apache.
+Register the concrete CLR types that correspond to known Avro record schemas:
 
 ```csharp
+using System.Runtime.Serialization;
 using Avro;
 using NStalling.Avro;
 using NStalling.Avro.Serialization;
 
-// 1. Register CLR types behind your Avro records.
-var resolver = new AvroTypeRegistry()
-    .Add<CustomerCreated>()
-    .Add<OrderPlaced>()
-    .BuildResolver();
-
-var serializer = new AvroSerializer(resolver);
-
-// 2. Deserialize. The payload materializes as the concrete record type.
-var schema = Schema.Parse(envelopeSchemaJson);
-var envelope = serializer.Deserialize<Envelope>(bytes, schema);
-
-// 3. Ordinary C# pattern matching just works.
-switch (envelope.Payload)
-{
-    case CustomerCreated c: Handle(c); break;
-    case OrderPlaced o:     Handle(o); break;
-}
-```
-
-```csharp
 [DataContract(Name = "CustomerCreated", Namespace = "Acme.Events")]
 public sealed class CustomerCreated
 {
@@ -102,7 +78,31 @@ public sealed class Envelope
     public string EventId { get; init; } = "";
     public object Payload { get; init; } = null!;
 }
+
+var resolver = new AvroTypeRegistry()
+    .Add<CustomerCreated>()
+    .Add<OrderPlaced>()
+    .BuildResolver();
+
+var serializer = new AvroSerializer(resolver);
+
+var schema = Schema.Parse(envelopeSchemaJson);
+var envelope = serializer.Deserialize<Envelope>(bytes, schema);
+
+switch (envelope.Payload)
+{
+    case CustomerCreated customer:
+        Handle(customer);
+        break;
+
+    case OrderPlaced order:
+        Handle(order);
+        break;
+}
 ```
+
+Apache.Avro reads the Avro data and schema; NStalling.Avro resolves the record schema to the registered
+CLR type.
 
 ## Registering types
 
@@ -350,18 +350,17 @@ wrapped.
 
 ## Samples
 
-Runnable samples live under [`NStalling.Avro.Samples`](src/NStalling.Avro.Samples):
+Runnable examples are available under [`NStalling.Avro.Samples`](src/NStalling.Avro.Samples):
 
-- **EventEnvelope** — resolves an `object` payload backed by an Avro union of record branches.
-- **Annotations** — demonstrates `[AvroTypeDiscriminator]`, `[AvroVersionDiscriminator]`,
-  `[AvroPolymorphic]`, and `[AvroSchemaVersion]`, including version-qualified CLR mappings that share one
-  Avro name.
-- **DependencyInjection** — the same union scenario as EventEnvelope, but configured through
-  `IServiceCollection.AddAvro` and resolved from a built `ServiceProvider` instead of building an
-  `AvroConfiguration` directly.
-- **TypeResolver** — exercises `IAvroTypeResolver.Resolve`/`TryResolve`/`ResolveOrDefault` directly
-  (outside `AvroSerializer.Deserialize`): version-qualified resolution, declared-type incompatibility, and
-  absence vs. ambiguity handling.
+- **EventEnvelope** — resolves concrete CLR types for an `object` payload backed by an Avro union.
+- **Annotations** — demonstrates discriminators, opaque payloads, and versioned CLR types that share an
+  Avro record name.
+- **DependencyInjection** — configures the union scenario through `IServiceCollection.AddAvro` and
+  resolves `AvroSerializer` from the service provider.
+- **TypeResolver** — exercises `IAvroTypeResolver` directly, including version-qualified resolution,
+  declared-type compatibility, and absence handling.
+
+From the `src` directory:
 
 ```bash
 dotnet run --project NStalling.Avro.Samples/EventEnvelope
@@ -371,6 +370,8 @@ dotnet run --project NStalling.Avro.Samples/TypeResolver
 ```
 
 ## Build and test
+
+From the `src` directory:
 
 ```bash
 dotnet build NStalling.Avro.sln

@@ -21,7 +21,7 @@ namespace NStalling.Avro
         internal AvroTypeIndex Index => _index;
 
         /// <summary>CLR types eligible for value-directed selection (the closed allowlist).</summary>
-        public IReadOnlyCollection<Type> Allowlist => System.Linq.Enumerable.ToArray(_index.Allowlist);
+        internal IReadOnlyCollection<Type> Allowlist => System.Linq.Enumerable.ToArray(_index.Allowlist);
 
         /// <inheritdoc />
         public Type Resolve(RecordSchema schema, Type? declaredType = null, string? schemaVersion = null)

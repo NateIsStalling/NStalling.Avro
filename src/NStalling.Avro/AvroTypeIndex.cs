@@ -48,9 +48,9 @@ namespace NStalling.Avro
         }
 
         /// <summary>All CLR types known to this index; the closed allowlist for value-directed selection.</summary>
-        public IReadOnlyCollection<Type> Allowlist => _allowlist;
+        internal IReadOnlyCollection<Type> Allowlist => _allowlist;
 
-        public bool IsAllowed(Type type) => _allowlist.Contains(type);
+        internal bool IsAllowed(Type type) => _allowlist.Contains(type);
 
         public static AvroTypeIndex Build(IEnumerable<AvroTypeMapping> mappings)
         {
